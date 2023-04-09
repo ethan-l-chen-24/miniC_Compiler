@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <math.h>
-//#include "y.tab.h"
+#include "y.tab.h"
 %}
 
 %option yylineno
@@ -11,28 +11,28 @@ alphanum_us 	[a-zA-Z0-9_]
 num     [0-9]
 
 %%
-";"     { printf("%c ", yytext[0]);}
-"="     { printf("%c ", yytext[0]);}
+";"     { printf("%c ", yytext[0]); return yytext[0]; }
+"="     { printf("%c ", yytext[0]); return yytext[0]; }
 
-(\+|\-|\/|\*)    { printf("%c ", yytext[0]);}
-(\(|\)|\{|\})    { printf("%c ", yytext[0]);}
-(<|>|<=|>=|==)      { printf("COMP ");}
+(\+|\-|\/|\*)    { printf("%c ", yytext[0]); return yytext[0]; }
+(\(|\)|\{|\})    { printf("%c ", yytext[0]); return yytext[0]; }
+(<|>|<=|>=|==)      { printf("COMP "); return COMP; }
 
-"extern"    { printf("EXTERN ");}
-"int"   { printf("INT ");}
-"void"      { printf("VOID ");}
-"return"    {printf("RETURN ");}
+"extern"    { printf("EXTERN "); return EXTERN; }
+"int"   { printf("INT "); return INT; }
+"void"      { printf("VOID "); return VOID; }
+"return"    {printf("RETURN "); return RETURN; }
 
-"if"    { printf("IF ");}
-"else"  { printf("ELSE ");}
-"for"   { printf("FOR ");}
-"while" { printf("WHILE "); }
+"if"    { printf("IF "); return IF; }
+"else"  { printf("ELSE "); return ELSE; }
+"for"   { printf("FOR "); return FOR; }
+"while" { printf("WHILE "); return WHILE; }
 
-"print"     { printf("PRINT ");}
-"read"      { printf("READ ");}
+"print"     { printf("PRINT "); return PRINT; }
+"read"      { printf("READ "); return READ; }
 
-{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("NAME ");}
-{num}+      {printf("NUM ");}
+{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("NAME "); return NAME; }
+{num}+      {printf("NUM "); return NUM; }
 %%
 
 int yywrap(){
