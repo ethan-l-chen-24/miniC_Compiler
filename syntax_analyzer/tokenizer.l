@@ -25,7 +25,6 @@ num     [0-9]
 
 "if"    { printf("IF "); return IF; }
 "else"  { printf("ELSE "); return ELSE; }
-"for"   { printf("FOR "); return FOR; }
 "while" { printf("WHILE "); return WHILE; }
 
 "print"     { printf("PRINT "); return PRINT; }

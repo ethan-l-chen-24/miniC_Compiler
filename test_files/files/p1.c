@@ -12,7 +12,8 @@ int func(int i){
 		a = 10 + b;
 	}
 	else {
-		if (b < i) 
+		if (b < i) {
 			b = a;
+		}
 	}
 }
