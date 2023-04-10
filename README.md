@@ -1,4 +1,4 @@
-#Mini-C Compiler
+# Mini-C Compiler
 
 This repository contains the code for a compiler for mini-C, a reduced version of the C programming language.
 
