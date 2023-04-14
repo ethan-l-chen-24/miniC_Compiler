@@ -1,15 +1,15 @@
-EXTERN  VOID  PRINT ( INT ) ; 
-EXTERN  INT  READ ( ) ; 
+EXTERN VOID PRINT(INT);
+EXTERN INT READ();
 
-INT  NAME ( INT  NAME ) { 
-	INT  NAME ; 
-	INT  NAME ; 
+INT NAME(INT NAME){
+	INT NAME;
+	INT NAME;
 	
-	WHILE  ( NAME  COMP  NAME ) { 
-		INT  NAME ; 
-		WHILE  ( NAME  COMP  NAME ) { 
-			NAME  =  NAME  +  NUM ; 
-		} 
-		NAME  =  NUM  +  NAME ; 
-	} 
-} 
+	WHILE (NAME LT NAME){
+		INT NAME;
+		WHILE (NAME LT NAME){
+			NAME = NAME + NUM;
+		}
+		NAME = NUM + NAME;
+	}
+}

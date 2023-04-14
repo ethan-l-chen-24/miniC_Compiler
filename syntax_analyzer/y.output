@@ -1,0 +1,1060 @@
+Grammar
+
+    0 $accept: minic $end
+
+    1 minic: extern extern func_def
+
+    2 extern: EXTERN VOID PRINT '(' INT ')' ';'
+    3       | EXTERN INT READ '(' ')' ';'
+
+    4 func_def: func_header block_statement
+
+    5 type: INT
+    6     | VOID
+
+    7 term: NAME
+    8     | NUM
+
+    9 func_header: type NAME '(' type NAME ')'
+   10            | type NAME '(' ')'
+
+   11 block_statement: '{' statements '}'
+   12                | '{' var_decs statements '}'
+
+   13 var_decs: var_decs declaration
+   14         | declaration
+
+   15 declaration: INT NAME ';'
+
+   16 statements: statements statement
+   17           | statement
+
+   18 statement: assign_statement
+   19          | if_statement
+   20          | while_loop
+   21          | block_statement
+   22          | call_statement
+   23          | return_statement
+
+   24 assign_statement: NAME '=' expression ';'
+   25                 | NAME '=' term ';'
+   26                 | NAME '=' READ '(' ')' ';'
+
+   27 call_statement: PRINT '(' expression ')' ';'
+   28               | PRINT '(' term ')' ';'
+
+   29 return_statement: RETURN term ';'
+
+   30 expression: term '+' term
+   31           | term '-' term
+   32           | term '/' term
+   33           | term '*' term
+   34           | '-' term
+
+   35 condition: '(' term comp term ')'
+
+   36 comp: LT
+   37     | GT
+   38     | LE
+   39     | GE
+   40     | EQ
+   41     | NE
+
+   42 if_statement: IF condition statement
+   43             | IF condition statement ELSE statement
+
+   44 while_loop: WHILE condition statement
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    '(' (40) 2 3 9 10 26 27 28 35
+    ')' (41) 2 3 9 10 26 27 28 35
+    '*' (42) 33
+    '+' (43) 30
+    '-' (45) 31 34
+    '/' (47) 32
+    ';' (59) 2 3 15 24 25 26 27 28 29
+    '=' (61) 24 25 26
+    '{' (123) 11 12
+    '}' (125) 11 12
+    error (256)
+    EXTERN (258) 2 3
+    INT (259) 2 3 5 15
+    VOID (260) 2 6
+    RETURN (261) 29
+    IF (262) 42 43
+    ELSE (263) 43
+    WHILE (264) 44
+    LT (265) 36
+    GT (266) 37
+    LE (267) 38
+    GE (268) 39
+    EQ (269) 40
+    NE (270) 41
+    NUM <ival> (271) 8
+    NAME <string> (272) 7 9 10 15 24 25 26
+    READ <string> (273) 3 26
+    PRINT <string> (274) 2 27 28
+
+
+Nonterminals, with rules where they appear
+
+    $accept (30)
+        on left: 0
+    minic (31)
+        on left: 1
+        on right: 0
+    extern (32)
+        on left: 2 3
+        on right: 1
+    func_def (33)
+        on left: 4
+        on right: 1
+    type (34)
+        on left: 5 6
+        on right: 9 10
+    term (35)
+        on left: 7 8
+        on right: 25 28 29 30 31 32 33 34 35
+    func_header (36)
+        on left: 9 10
+        on right: 4
+    block_statement (37)
+        on left: 11 12
+        on right: 4 21
+    var_decs (38)
+        on left: 13 14
+        on right: 12 13
+    declaration (39)
+        on left: 15
+        on right: 13 14
+    statements (40)
+        on left: 16 17
+        on right: 11 12 16
+    statement (41)
+        on left: 18 19 20 21 22 23
+        on right: 16 17 42 43 44
+    assign_statement (42)
+        on left: 24 25 26
+        on right: 18
+    call_statement (43)
+        on left: 27 28
+        on right: 22
+    return_statement (44)
+        on left: 29
+        on right: 23
+    expression (45)
+        on left: 30 31 32 33 34
+        on right: 24 27
+    condition (46)
+        on left: 35
+        on right: 42 43 44
+    comp (47)
+        on left: 36 37 38 39 40 41
+        on right: 35
+    if_statement (48)
+        on left: 42 43
+        on right: 19
+    while_loop (49)
+        on left: 44
+        on right: 20
+
+
+State 0
+
+    0 $accept: • minic $end
+
+    EXTERN  shift, and go to state 1
+
+    minic   go to state 2
+    extern  go to state 3
+
+
+State 1
+
+    2 extern: EXTERN • VOID PRINT '(' INT ')' ';'
+    3       | EXTERN • INT READ '(' ')' ';'
+
+    INT   shift, and go to state 4
+    VOID  shift, and go to state 5
+
+
+State 2
+
+    0 $accept: minic • $end
+
+    $end  shift, and go to state 6
+
+
+State 3
+
+    1 minic: extern • extern func_def
+
+    EXTERN  shift, and go to state 1
+
+    extern  go to state 7
+
+
+State 4
+
+    3 extern: EXTERN INT • READ '(' ')' ';'
+
+    READ  shift, and go to state 8
+
+
+State 5
+
+    2 extern: EXTERN VOID • PRINT '(' INT ')' ';'
+
+    PRINT  shift, and go to state 9
+
+
+State 6
+
+    0 $accept: minic $end •
+
+    $default  accept
+
+
+State 7
+
+    1 minic: extern extern • func_def
+
+    INT   shift, and go to state 10
+    VOID  shift, and go to state 11
+
+    func_def     go to state 12
+    type         go to state 13
+    func_header  go to state 14
+
+
+State 8
+
+    3 extern: EXTERN INT READ • '(' ')' ';'
+
+    '('  shift, and go to state 15
+
+
+State 9
+
+    2 extern: EXTERN VOID PRINT • '(' INT ')' ';'
+
+    '('  shift, and go to state 16
+
+
+State 10
+
+    5 type: INT •
+
+    $default  reduce using rule 5 (type)
+
+
+State 11
+
+    6 type: VOID •
+
+    $default  reduce using rule 6 (type)
+
+
+State 12
+
+    1 minic: extern extern func_def •
+
+    $default  reduce using rule 1 (minic)
+
+
+State 13
+
+    9 func_header: type • NAME '(' type NAME ')'
+   10            | type • NAME '(' ')'
+
+    NAME  shift, and go to state 17
+
+
+State 14
+
+    4 func_def: func_header • block_statement
+
+    '{'  shift, and go to state 18
+
+    block_statement  go to state 19
+
+
+State 15
+
+    3 extern: EXTERN INT READ '(' • ')' ';'
+
+    ')'  shift, and go to state 20
+
+
+State 16
+
+    2 extern: EXTERN VOID PRINT '(' • INT ')' ';'
+
+    INT  shift, and go to state 21
+
+
+State 17
+
+    9 func_header: type NAME • '(' type NAME ')'
+   10            | type NAME • '(' ')'
+
+    '('  shift, and go to state 22
+
+
+State 18
+
+   11 block_statement: '{' • statements '}'
+   12                | '{' • var_decs statements '}'
+
+    INT     shift, and go to state 23
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+
+    block_statement   go to state 29
+    var_decs          go to state 30
+    declaration       go to state 31
+    statements        go to state 32
+    statement         go to state 33
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 19
+
+    4 func_def: func_header block_statement •
+
+    $default  reduce using rule 4 (func_def)
+
+
+State 20
+
+    3 extern: EXTERN INT READ '(' ')' • ';'
+
+    ';'  shift, and go to state 39
+
+
+State 21
+
+    2 extern: EXTERN VOID PRINT '(' INT • ')' ';'
+
+    ')'  shift, and go to state 40
+
+
+State 22
+
+    9 func_header: type NAME '(' • type NAME ')'
+   10            | type NAME '(' • ')'
+
+    INT   shift, and go to state 10
+    VOID  shift, and go to state 11
+    ')'   shift, and go to state 41
+
+    type  go to state 42
+
+
+State 23
+
+   15 declaration: INT • NAME ';'
+
+    NAME  shift, and go to state 43
+
+
+State 24
+
+   29 return_statement: RETURN • term ';'
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 46
+
+
+State 25
+
+   42 if_statement: IF • condition statement
+   43             | IF • condition statement ELSE statement
+
+    '('  shift, and go to state 47
+
+    condition  go to state 48
+
+
+State 26
+
+   44 while_loop: WHILE • condition statement
+
+    '('  shift, and go to state 47
+
+    condition  go to state 49
+
+
+State 27
+
+   24 assign_statement: NAME • '=' expression ';'
+   25                 | NAME • '=' term ';'
+   26                 | NAME • '=' READ '(' ')' ';'
+
+    '='  shift, and go to state 50
+
+
+State 28
+
+   27 call_statement: PRINT • '(' expression ')' ';'
+   28               | PRINT • '(' term ')' ';'
+
+    '('  shift, and go to state 51
+
+
+State 29
+
+   21 statement: block_statement •
+
+    $default  reduce using rule 21 (statement)
+
+
+State 30
+
+   12 block_statement: '{' var_decs • statements '}'
+   13 var_decs: var_decs • declaration
+
+    INT     shift, and go to state 23
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+
+    block_statement   go to state 29
+    declaration       go to state 52
+    statements        go to state 53
+    statement         go to state 33
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 31
+
+   14 var_decs: declaration •
+
+    $default  reduce using rule 14 (var_decs)
+
+
+State 32
+
+   11 block_statement: '{' statements • '}'
+   16 statements: statements • statement
+
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+    '}'     shift, and go to state 54
+
+    block_statement   go to state 29
+    statement         go to state 55
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 33
+
+   17 statements: statement •
+
+    $default  reduce using rule 17 (statements)
+
+
+State 34
+
+   18 statement: assign_statement •
+
+    $default  reduce using rule 18 (statement)
+
+
+State 35
+
+   22 statement: call_statement •
+
+    $default  reduce using rule 22 (statement)
+
+
+State 36
+
+   23 statement: return_statement •
+
+    $default  reduce using rule 23 (statement)
+
+
+State 37
+
+   19 statement: if_statement •
+
+    $default  reduce using rule 19 (statement)
+
+
+State 38
+
+   20 statement: while_loop •
+
+    $default  reduce using rule 20 (statement)
+
+
+State 39
+
+    3 extern: EXTERN INT READ '(' ')' ';' •
+
+    $default  reduce using rule 3 (extern)
+
+
+State 40
+
+    2 extern: EXTERN VOID PRINT '(' INT ')' • ';'
+
+    ';'  shift, and go to state 56
+
+
+State 41
+
+   10 func_header: type NAME '(' ')' •
+
+    $default  reduce using rule 10 (func_header)
+
+
+State 42
+
+    9 func_header: type NAME '(' type • NAME ')'
+
+    NAME  shift, and go to state 57
+
+
+State 43
+
+   15 declaration: INT NAME • ';'
+
+    ';'  shift, and go to state 58
+
+
+State 44
+
+    8 term: NUM •
+
+    $default  reduce using rule 8 (term)
+
+
+State 45
+
+    7 term: NAME •
+
+    $default  reduce using rule 7 (term)
+
+
+State 46
+
+   29 return_statement: RETURN term • ';'
+
+    ';'  shift, and go to state 59
+
+
+State 47
+
+   35 condition: '(' • term comp term ')'
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 60
+
+
+State 48
+
+   42 if_statement: IF condition • statement
+   43             | IF condition • statement ELSE statement
+
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+
+    block_statement   go to state 29
+    statement         go to state 61
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 49
+
+   44 while_loop: WHILE condition • statement
+
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+
+    block_statement   go to state 29
+    statement         go to state 62
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 50
+
+   24 assign_statement: NAME '=' • expression ';'
+   25                 | NAME '=' • term ';'
+   26                 | NAME '=' • READ '(' ')' ';'
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+    READ  shift, and go to state 63
+    '-'   shift, and go to state 64
+
+    term        go to state 65
+    expression  go to state 66
+
+
+State 51
+
+   27 call_statement: PRINT '(' • expression ')' ';'
+   28               | PRINT '(' • term ')' ';'
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+    '-'   shift, and go to state 64
+
+    term        go to state 67
+    expression  go to state 68
+
+
+State 52
+
+   13 var_decs: var_decs declaration •
+
+    $default  reduce using rule 13 (var_decs)
+
+
+State 53
+
+   12 block_statement: '{' var_decs statements • '}'
+   16 statements: statements • statement
+
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+    '}'     shift, and go to state 69
+
+    block_statement   go to state 29
+    statement         go to state 55
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 54
+
+   11 block_statement: '{' statements '}' •
+
+    $default  reduce using rule 11 (block_statement)
+
+
+State 55
+
+   16 statements: statements statement •
+
+    $default  reduce using rule 16 (statements)
+
+
+State 56
+
+    2 extern: EXTERN VOID PRINT '(' INT ')' ';' •
+
+    $default  reduce using rule 2 (extern)
+
+
+State 57
+
+    9 func_header: type NAME '(' type NAME • ')'
+
+    ')'  shift, and go to state 70
+
+
+State 58
+
+   15 declaration: INT NAME ';' •
+
+    $default  reduce using rule 15 (declaration)
+
+
+State 59
+
+   29 return_statement: RETURN term ';' •
+
+    $default  reduce using rule 29 (return_statement)
+
+
+State 60
+
+   35 condition: '(' term • comp term ')'
+
+    LT  shift, and go to state 71
+    GT  shift, and go to state 72
+    LE  shift, and go to state 73
+    GE  shift, and go to state 74
+    EQ  shift, and go to state 75
+    NE  shift, and go to state 76
+
+    comp  go to state 77
+
+
+State 61
+
+   42 if_statement: IF condition statement •
+   43             | IF condition statement • ELSE statement
+
+    ELSE  shift, and go to state 78
+
+    $default  reduce using rule 42 (if_statement)
+
+
+State 62
+
+   44 while_loop: WHILE condition statement •
+
+    $default  reduce using rule 44 (while_loop)
+
+
+State 63
+
+   26 assign_statement: NAME '=' READ • '(' ')' ';'
+
+    '('  shift, and go to state 79
+
+
+State 64
+
+   34 expression: '-' • term
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 80
+
+
+State 65
+
+   25 assign_statement: NAME '=' term • ';'
+   30 expression: term • '+' term
+   31           | term • '-' term
+   32           | term • '/' term
+   33           | term • '*' term
+
+    ';'  shift, and go to state 81
+    '+'  shift, and go to state 82
+    '-'  shift, and go to state 83
+    '/'  shift, and go to state 84
+    '*'  shift, and go to state 85
+
+
+State 66
+
+   24 assign_statement: NAME '=' expression • ';'
+
+    ';'  shift, and go to state 86
+
+
+State 67
+
+   28 call_statement: PRINT '(' term • ')' ';'
+   30 expression: term • '+' term
+   31           | term • '-' term
+   32           | term • '/' term
+   33           | term • '*' term
+
+    ')'  shift, and go to state 87
+    '+'  shift, and go to state 82
+    '-'  shift, and go to state 83
+    '/'  shift, and go to state 84
+    '*'  shift, and go to state 85
+
+
+State 68
+
+   27 call_statement: PRINT '(' expression • ')' ';'
+
+    ')'  shift, and go to state 88
+
+
+State 69
+
+   12 block_statement: '{' var_decs statements '}' •
+
+    $default  reduce using rule 12 (block_statement)
+
+
+State 70
+
+    9 func_header: type NAME '(' type NAME ')' •
+
+    $default  reduce using rule 9 (func_header)
+
+
+State 71
+
+   36 comp: LT •
+
+    $default  reduce using rule 36 (comp)
+
+
+State 72
+
+   37 comp: GT •
+
+    $default  reduce using rule 37 (comp)
+
+
+State 73
+
+   38 comp: LE •
+
+    $default  reduce using rule 38 (comp)
+
+
+State 74
+
+   39 comp: GE •
+
+    $default  reduce using rule 39 (comp)
+
+
+State 75
+
+   40 comp: EQ •
+
+    $default  reduce using rule 40 (comp)
+
+
+State 76
+
+   41 comp: NE •
+
+    $default  reduce using rule 41 (comp)
+
+
+State 77
+
+   35 condition: '(' term comp • term ')'
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 89
+
+
+State 78
+
+   43 if_statement: IF condition statement ELSE • statement
+
+    RETURN  shift, and go to state 24
+    IF      shift, and go to state 25
+    WHILE   shift, and go to state 26
+    NAME    shift, and go to state 27
+    PRINT   shift, and go to state 28
+    '{'     shift, and go to state 18
+
+    block_statement   go to state 29
+    statement         go to state 90
+    assign_statement  go to state 34
+    call_statement    go to state 35
+    return_statement  go to state 36
+    if_statement      go to state 37
+    while_loop        go to state 38
+
+
+State 79
+
+   26 assign_statement: NAME '=' READ '(' • ')' ';'
+
+    ')'  shift, and go to state 91
+
+
+State 80
+
+   34 expression: '-' term •
+
+    $default  reduce using rule 34 (expression)
+
+
+State 81
+
+   25 assign_statement: NAME '=' term ';' •
+
+    $default  reduce using rule 25 (assign_statement)
+
+
+State 82
+
+   30 expression: term '+' • term
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 92
+
+
+State 83
+
+   31 expression: term '-' • term
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 93
+
+
+State 84
+
+   32 expression: term '/' • term
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 94
+
+
+State 85
+
+   33 expression: term '*' • term
+
+    NUM   shift, and go to state 44
+    NAME  shift, and go to state 45
+
+    term  go to state 95
+
+
+State 86
+
+   24 assign_statement: NAME '=' expression ';' •
+
+    $default  reduce using rule 24 (assign_statement)
+
+
+State 87
+
+   28 call_statement: PRINT '(' term ')' • ';'
+
+    ';'  shift, and go to state 96
+
+
+State 88
+
+   27 call_statement: PRINT '(' expression ')' • ';'
+
+    ';'  shift, and go to state 97
+
+
+State 89
+
+   35 condition: '(' term comp term • ')'
+
+    ')'  shift, and go to state 98
+
+
+State 90
+
+   43 if_statement: IF condition statement ELSE statement •
+
+    $default  reduce using rule 43 (if_statement)
+
+
+State 91
+
+   26 assign_statement: NAME '=' READ '(' ')' • ';'
+
+    ';'  shift, and go to state 99
+
+
+State 92
+
+   30 expression: term '+' term •
+
+    $default  reduce using rule 30 (expression)
+
+
+State 93
+
+   31 expression: term '-' term •
+
+    $default  reduce using rule 31 (expression)
+
+
+State 94
+
+   32 expression: term '/' term •
+
+    $default  reduce using rule 32 (expression)
+
+
+State 95
+
+   33 expression: term '*' term •
+
+    $default  reduce using rule 33 (expression)
+
+
+State 96
+
+   28 call_statement: PRINT '(' term ')' ';' •
+
+    $default  reduce using rule 28 (call_statement)
+
+
+State 97
+
+   27 call_statement: PRINT '(' expression ')' ';' •
+
+    $default  reduce using rule 27 (call_statement)
+
+
+State 98
+
+   35 condition: '(' term comp term ')' •
+
+    $default  reduce using rule 35 (condition)
+
+
+State 99
+
+   26 assign_statement: NAME '=' READ '(' ')' ';' •
+
+    $default  reduce using rule 26 (assign_statement)

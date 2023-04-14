@@ -1,5 +1,6 @@
 %{
 #include <stdio.h>
+//#include "./ast/ast.h"
 void yyerror(const char *);
 extern int yylex();
 extern int yylex_destroy();
@@ -8,81 +9,122 @@ extern int yylineno;
 extern char* yytext;
 %}
 
-%token COMP EXTERN INT VOID RETURN IF ELSE WHILE PRINT READ NAME NUM
-%left '+' '-'
-%left '*' '/'
-%left ')'
+%union {
+	int ival;
+	char* string;
+	//astNode* node;
+}
 
-%start MINIC
+%token EXTERN INT VOID RETURN IF ELSE WHILE LT GT LE GE EQ NE 
+%token<ival> NUM
+%token<string> NAME READ PRINT
+//%type<astNode> minic extern func_def assign_statement expression
+//%type<string> func_header
 
+%nonassoc IF
+%nonassoc ELSE
+
+%start minic
 %%
-MINIC:
-	MINIC PRINT_FUNC | 
-	MINIC READ_FUNC | 
-	MINIC FUNC_DEC | 
-	PRINT_FUNC | 
-	READ_FUNC | 
-	FUNC_DEC
+minic:
+	extern extern func_def 
+	;
 
-PRINT_FUNC: 
-	EXTERN VOID PRINT '(' INT ')' ';'
+extern:
+	EXTERN VOID PRINT '(' INT ')' ';' |
+	EXTERN INT READ '(' ')' ';' 
+	;
 
-READ_FUNC:
-	EXTERN INT READ '(' ')' ';'
+func_def:
+	func_header block_statement
+	;
 
-PRINT_CALL:
-	PRINT '(' EXPRESSION ')'
+type:
+	INT |
+	VOID
+	;
 
-READ_CALL:
-	READ '(' ')'
-
-FUNC_DEC:
-	INT NAME '(' INT NAME ')' '{' BODY '}' |
-	INT NAME '(' ')' '{' BODY '}'
-
-VAR_DEC:
-	INT NAME
-
-VAR_INIT:
-	NAME '=' EXPRESSION
-
-EXPRESSION:
-	EXPRESSION '+' EXPRESSION |
-	EXPRESSION '-' EXPRESSION |
-	EXPRESSION '/' EXPRESSION |
-	EXPRESSION '*' EXPRESSION |
-	'-' EXPRESSION |
-	'(' EXPRESSION ')' |
+term:
 	NAME |
-	NUM |
-	READ_CALL
+	NUM
+	;
 
-COMPARE:
-	EXPRESSION COMP EXPRESSION
+func_header:
+	type NAME '(' type NAME ')' | 
+	type NAME '(' ')'
+	;
 
-ONELINE:
-	VAR_DEC ';' |
-	VAR_INIT ';' |
-	PRINT_CALL ';' |
-	READ_CALL ';' |
-	RETURN_STATEMENT ';'
+block_statement:
+	'{' statements '}' |
+	'{' var_decs statements '}'
+	;
 
-BODY:
-	BODY IF_STATEMENT |
-	BODY WHILE_STATEMENT |
-	BODY ONELINE |
+var_decs:
+	var_decs declaration |
+	declaration
+	;
 
-IF_STATEMENT:
-	IF '(' COMPARE ')' '{' BODY '}' |
-	IF '(' COMPARE ')' '{' BODY '}' ELSE '{' BODY '}' |
-	IF '(' COMPARE ')' ONELINE |
-	IF '(' COMPARE ')' ONELINE ELSE '(' ONELINE ')'
+declaration:
+	INT NAME ';';
 
-WHILE_STATEMENT:
-	WHILE '(' COMPARE ')' '{' BODY '}'
+statements:
+	statements statement |
+	statement
+	;
 
-RETURN_STATEMENT:
-	RETURN EXPRESSION
+statement:
+	assign_statement |
+	if_statement |
+	while_loop |
+	block_statement |
+	call_statement |
+	return_statement
+	;
+
+assign_statement:
+	NAME '=' expression ';' |
+	NAME '=' term ';' |
+	NAME '=' READ '(' ')' ';'
+	;
+
+call_statement:
+	PRINT '(' expression ')' ';' |
+	PRINT '(' term ')' ';' 
+	;
+
+return_statement:
+	RETURN term ';' ;
+
+expression:
+	term '+' term |
+	term '-' term |
+	term '/' term |
+	term '*' term |
+	'-' term 
+	;
+
+condition:
+	'(' term comp term ')' 
+	;
+
+comp:
+	LT | 
+	GT | 
+	LE | 
+	GE | 
+	EQ | 
+	NE
+	;
+
+if_statement:
+	IF condition statement |
+	IF condition statement ELSE statement 
+	;  
+
+
+while_loop:
+	WHILE condition statement
+	;
 
 %%
 

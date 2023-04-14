@@ -14,5 +14,7 @@ int func(int i){
 	else {
 		if (b < i)
 			b = a;
+		else 
+			a = b;
 	}
 }

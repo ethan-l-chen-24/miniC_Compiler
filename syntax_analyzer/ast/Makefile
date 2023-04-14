@@ -1,14 +1,9 @@
 lex_source = tokenizer
 yacc_source = grammar
 source = syntax
-test_file = p5
-
 $(source).out: $(lex_source).l $(yacc_source).y
 	yacc -d -v $(yacc_source).y
 	lex $(lex_source).l
 	gcc -o $(source).out lex.yy.c y.tab.c
 clean:
 	rm lex.yy.c y.tab.c y.tab.h $(source).out y.output
-
-test:
-	./syntax.out ../test_files/files/$(test_file).c

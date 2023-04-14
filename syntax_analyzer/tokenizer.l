@@ -1,6 +1,6 @@
 %{
 #include <stdio.h>
-#include <math.h>
+#include <string.h>
 #include "y.tab.h"
 %}
 
@@ -11,35 +11,34 @@ alphanum_us 	[a-zA-Z0-9_]
 num     [0-9]
 
 %%
-";"     { printf("%c ", yytext[0]); return yytext[0]; }
-"="     { printf("%c ", yytext[0]); return yytext[0]; }
+";"     { printf("%s", yytext); return yytext[0]; }
+"="     { printf("%s", yytext);  return yytext[0]; }
 
-(\+|\-|\/|\*)    { printf("%c ", yytext[0]); return yytext[0]; }
-(\(|\)|\{|\})    { printf("%c ", yytext[0]); return yytext[0]; }
-(<|>|<=|>=|==)      { printf("COMP "); return COMP; }
+(\+|\-|\/|\*)    { printf("%s", yytext);  return yytext[0]; }
+(\(|\)|\{|\})    { printf("%s", yytext);  return yytext[0]; }
+"<"     { printf("LT"); return LT; }
+">"     { printf("GT"); return GT; }
+"<="    { printf("LE"); return LE; }
+">="    { printf("GE"); return GE; }
+"=="    { printf("EQ"); return EQ; }
+"!="    { printf("NE"); return NE; }
 
-"extern"    { printf("EXTERN "); return EXTERN; }
-"int"   { printf("INT "); return INT; }
-"void"      { printf("VOID "); return VOID; }
-"return"    {printf("RETURN "); return RETURN; }
+"extern"    { printf("EXTERN"); return EXTERN; }
+"int"   { printf("INT"); return INT; }
+"void"      { printf("VOID"); return VOID; }
+"return"    { printf("RETURN"); return RETURN; }
 
-"if"    { printf("IF "); return IF; }
-"else"  { printf("ELSE "); return ELSE; }
-"while" { printf("WHILE "); return WHILE; }
+"if"    { printf("IF"); return IF; }
+"else"  { printf("ELSE"); return ELSE; }
+"while" { printf("WHILE"); return WHILE; }
 
-"print"     { printf("PRINT "); return PRINT; }
-"read"      { printf("READ "); return READ; }
+"print"     { printf("PRINT"); yylval.string = strdup("Print"); return PRINT; }
+"read"      { printf("READ"); yylval.string = strdup("Print"); return READ; }
 
-{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("NAME "); return NAME; }
-{num}+      {printf("NUM "); return NUM; }
+{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("%s", yytext); yylval.string = strdup(yytext); return NAME; }
+{num}+      { printf("%s", yytext);  yylval.ival = atoi(yytext); return NUM; }
 %%
 
 int yywrap(){
 	return 1;
 }
-
-/*
-int main() {
-    yylex();
-    return(0);
-} */
