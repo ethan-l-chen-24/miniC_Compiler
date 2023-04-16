@@ -30,17 +30,17 @@ extern char* yytext;
 %start minic
 %%
 minic:
-	extern extern func_def { $$ = createProg($1, $2, $3); printNode($$); free($$) }
+	extern extern func_def { $$ = createProg($1, $2, $3); printNode($$); freeNode($$); }
 	;
 
 extern:
-	EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern($3);} |
-	EXTERN INT READ '(' ')' ';' { $$ = createExtern($3); }
+	EXTERN VOID PRINT '(' INT ')' ';' { $$ = createExtern($3); free($3); } |
+	EXTERN INT READ '(' ')' ';' { $$ = createExtern($3); free($3); }
 	;
 
 func_def:
-	INT NAME '(' INT NAME ')' block_statement { $$ = createFunc($2, createVar($5), $7); } | 
-	INT NAME '(' ')' block_statement { $$ = createFunc($2, NULL, $5); }
+	INT NAME '(' INT NAME ')' block_statement { $$ = createFunc($2, createVar($5), $7); free($2); free($5); } | 
+	INT NAME '(' ')' block_statement { $$ = createFunc($2, NULL, $5); free($2); }
 	;
 
 term:
@@ -52,7 +52,7 @@ block_statement:
 	'{' statements '}' { $$ = createBlock($2); } |
 	'{' var_decs statements '}' { 
 			$2->insert($2->end(), $3->begin(), $3->end()); 
-			free($3); 
+			delete($3); 
 			$$ = createBlock($2); 
 		}
 	;
@@ -63,7 +63,7 @@ var_decs:
 	;
 
 declaration:
-	INT NAME ';' { $$ = createDecl($2); } 
+	INT NAME ';' { $$ = createDecl($2); free($2); } 
 	;
 
 statements:
@@ -81,14 +81,14 @@ statement:
 	;
 
 assign_statement:
-	NAME '=' expression ';' { $$ = createAsgn(createVar($1), $3); } |
-	NAME '=' term ';' { $$ = createAsgn(createVar($1), $3); } |
-	NAME '=' READ '(' ')' ';' { $$ = createAsgn(createVar($1), createCall($3)); }
+	NAME '=' expression ';' { $$ = createAsgn(createVar($1), $3); free($1); } |
+	NAME '=' term ';' { $$ = createAsgn(createVar($1), $3); free($1); } |
+	NAME '=' READ '(' ')' ';' { $$ = createAsgn(createVar($1), createCall($3)); free($1); free($3); }
 	;
 
 call_statement:
-	PRINT '(' expression ')' ';' { $$ = createCall($1, $3) ;} |
-	PRINT '(' term ')' ';' { $$ = createCall($1, $3); } 
+	PRINT '(' expression ')' ';' { $$ = createCall($1, $3); free($1); } |
+	PRINT '(' term ')' ';' { $$ = createCall($1, $3); free($1); } 
 	;
 
 return_statement:

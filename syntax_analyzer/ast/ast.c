@@ -72,7 +72,8 @@ astNode* createExtern(const char *name){
 	node = (astNode*)calloc(1, sizeof(astNode));
 	node->type = ast_extern;
 	
-	node->ext.name = name;
+	node->ext.name = (char *) calloc(1, sizeof(char) * (strlen(name)+1));
+	strcpy(node->ext.name, name);
 
 	return(node);
 }
@@ -93,7 +94,8 @@ astNode* createVar(const char *name){
 	node = (astNode*)calloc(1, sizeof(astNode));
 	node->type = ast_var;
 	
-	node->var.name = name;
+	node->var.name = (char *) calloc(1, sizeof(char) * (strlen(name)+1));
+	strcpy(node->var.name, name);
 	
 	return(node);
 }
@@ -244,7 +246,7 @@ void freeRet(astNode *node){
 
 /*create and free functions for a stmt of type ast_block*/
 astNode* createBlock(vector<astNode*> *stmt_list){
-
+	vector<astNode*> slist;
 	astNode* node = (astNode *)calloc(1, sizeof(astNode));
 	node->type = ast_stmt;
 	node->stmt.type = ast_block;
@@ -267,7 +269,6 @@ void freeBlock(astNode *node){
 	}
 	
 	delete(node->stmt.block.stmt_list);
-	free(slist);
 	free(node);
 	return;
 }
