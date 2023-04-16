@@ -34,8 +34,8 @@ num     [0-9]
 "print"     { printf("PRINT"); }
 "read"      { printf("READ"); }
 
-{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("NAME"); }
-{num}+      { printf("NUM"); }
+{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("%s", yytext); }
+{num}+      { printf("%s", yytext); }
 %%
 
 int yywrap(){

@@ -1,0 +1,59 @@
+Prog:
+ Func: func
+  Var: i
+  Stmt: 
+   Block:
+    Stmt: 
+     Decl: a
+    Stmt: 
+     Decl: b
+    Stmt: 
+     If: cond
+      RExpr: 
+       Var: a
+       Var: i
+     If: body
+      Stmt: 
+       Block:
+        Stmt: 
+         While: cond 
+          RExpr: 
+           Var: b
+           Var: i
+         While: body 
+          Stmt: 
+           Block:
+            Stmt: 
+             Asgn: lhs
+              Var: b
+             Asgn: rhs
+              BExpr: 
+               Var: b
+               Const: 20
+        Stmt: 
+         Asgn: lhs
+          Var: a
+         Asgn: rhs
+          BExpr: 
+           Const: 10
+           Var: b
+     Else: body
+      Stmt: 
+       Block:
+        Stmt: 
+         If: cond
+          RExpr: 
+           Var: b
+           Var: i
+         If: body
+          Stmt: 
+           Asgn: lhs
+            Var: b
+           Asgn: rhs
+            Var: a
+         Else: body
+          Stmt: 
+           Asgn: lhs
+            Var: a
+           Asgn: rhs
+            Var: b

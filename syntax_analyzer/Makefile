@@ -1,14 +1,29 @@
 lex_source = tokenizer
 yacc_source = grammar
+lib = ast/ast.c
 source = syntax
 test_file = p5
 
-$(source).out: $(lex_source).l $(yacc_source).y
+all: build test
+	
+build: $(yacc_source).y $(lex_source).l $(lib)
 	yacc -d -v $(yacc_source).y
 	lex $(lex_source).l
-	gcc -o $(source).out lex.yy.c y.tab.c
+	g++ -o $(source).out y.tab.c lex.yy.c $(lib)
+
 clean:
 	rm lex.yy.c y.tab.c y.tab.h $(source).out y.output
 
 test:
-	./syntax.out ../test_files/files/$(test_file).c
+	./$(source).out ../test_files/files/$(test_file).c
+
+valgrind:
+	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out ../test_files/files/$(test_file).c
+
+tree:
+	./$(source).out ../test_files/files/$(test_file).c > ../test_files/asts/$(test_file).txt
+
+tokens:
+	lex $(lex_source)_output.l
+	gcc -o $(source)_output.out lex.yy.c
+	./$(source)_output.out < ../test_files/files/$(test_file).c > ../test_files/tokenized/$(test_file).txt

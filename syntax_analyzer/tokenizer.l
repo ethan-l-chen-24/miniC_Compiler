@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include "./ast/ast.h"
 #include "y.tab.h"
 %}
 
@@ -11,32 +12,33 @@ alphanum_us 	[a-zA-Z0-9_]
 num     [0-9]
 
 %%
-";"     { printf("%s", yytext); return yytext[0]; }
-"="     { printf("%s", yytext);  return yytext[0]; }
+[ \t\n]
+";"     { return yytext[0]; }
+"="     { return yytext[0]; }
 
-(\+|\-|\/|\*)    { printf("%s", yytext);  return yytext[0]; }
-(\(|\)|\{|\})    { printf("%s", yytext);  return yytext[0]; }
-"<"     { printf("LT"); return LT; }
-">"     { printf("GT"); return GT; }
-"<="    { printf("LE"); return LE; }
-">="    { printf("GE"); return GE; }
-"=="    { printf("EQ"); return EQ; }
-"!="    { printf("NE"); return NE; }
+(\+|\-|\/|\*)    { return yytext[0]; }
+(\(|\)|\{|\})    { return yytext[0]; }
+"<"     { return LT; }
+">"     { return GT; }
+"<="    { return LE; }
+">="    { return GE; }
+"=="    { return EQ; }
+"!="    { return NEQ; }
 
-"extern"    { printf("EXTERN"); return EXTERN; }
-"int"   { printf("INT"); return INT; }
-"void"      { printf("VOID"); return VOID; }
-"return"    { printf("RETURN"); return RETURN; }
+"extern"    { return EXTERN; }
+"int"   { return INT; }
+"void"      { return VOID; }
+"return"    { return RETURN; }
 
-"if"    { printf("IF"); return IF; }
-"else"  { printf("ELSE"); return ELSE; }
-"while" { printf("WHILE"); return WHILE; }
+"if"    { return IF; }
+"else"  { return ELSE; }
+"while" { return WHILE; }
 
-"print"     { printf("PRINT"); yylval.string = strdup("Print"); return PRINT; }
-"read"      { printf("READ"); yylval.string = strdup("Print"); return READ; }
+"print"     { yylval.string = strdup("Print"); return PRINT; }
+"read"      { yylval.string = strdup("Read"); return READ; }
 
-{alpha}{alphanum_us}*{alphanum}+|{alpha}    { printf("%s", yytext); yylval.string = strdup(yytext); return NAME; }
-{num}+      { printf("%s", yytext);  yylval.ival = atoi(yytext); return NUM; }
+{alpha}{alphanum_us}*{alphanum}+|{alpha}    { yylval.string = strdup(yytext); return NAME; }
+{num}+      { yylval.ival = atoi(yytext); return NUM; }
 %%
 
 int yywrap(){
