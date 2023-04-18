@@ -113,17 +113,17 @@ bool semanticAnalysis(astNode* node) {
         // handle parameters
         case(ast_func):
             // create new var list and add parameter if it exists
+            vector<char*>* current_symbols = new vector<char*>();
             if(node->func.param != NULL) {
-                stack.push_front(new vector<char*>);
-                stack.front()->push_back(node->func.param->var.name);
+                stack.push_front(current_symbols);
+                current_symbols->push_back(node->func.param->var.name);
             }
 
             result = semanticAnalysis(node->func.body); // traverse into body of function
 
-            // free the node
-            vector<char*>* front = stack.front();
+            // free the front symbol vector
             stack.pop_front();
-            free(front);
+            delete(current_symbols);
             break;
 
     }
@@ -201,7 +201,8 @@ bool handleStatements(astNode* node) {
 
         // if a block statement, create new var list and iterate statements
         case(ast_block):
-            stack.push_front(new vector<char*>);
+            vector<char*>* current_symbols = new vector<char*>();
+            stack.push_front(current_symbols);
 
             vector<astNode*>* slist = node->stmt.block.stmt_list;
             vector<astNode*>::iterator it = slist->begin();
@@ -209,9 +210,10 @@ bool handleStatements(astNode* node) {
                 result &= semanticAnalysis(*it);
                 it++;
             }
-            vector<char*>* front = stack.front();
+
+            // free the front symbol vector
             stack.pop_front();
-            free(front);
+            delete(current_symbols);
             break;
 
     }

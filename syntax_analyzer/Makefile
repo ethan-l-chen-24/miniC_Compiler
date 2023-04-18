@@ -3,7 +3,7 @@ yacc_source = grammar
 lib = ast/ast
 main = syntax_analyzer
 source = syntax
-test_file = p5
+test_file = p1
 
 all: build test
 	
@@ -13,7 +13,7 @@ build: $(yacc_source).y $(lex_source).l $(lib).c $(main).c
 	g++ -ggdb -o $(source).out y.tab.c lex.yy.c $(lib).c $(main).c
 
 clean:
-	rm lex.yy.c y.tab.c y.tab.h $(source).out y.output
+	rm lex.yy.c y.tab.c y.tab.h *.out y.output
 
 test:
 	./$(source).out ../test_files/files/$(test_file).c
