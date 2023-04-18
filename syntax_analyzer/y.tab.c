@@ -72,13 +72,12 @@
 #include <stdio.h>
 #include "./ast/ast.h"
 void yyerror(const char *);
-extern int yylex();
-extern int yylex_destroy();
-extern FILE *yyin;
 extern int yylineno;
-extern char* yytext;
+extern int yylex();
 
-#line 82 "y.tab.c"
+extern astNode* root;
+
+#line 81 "y.tab.c"
 
 # ifndef YY_CAST
 #  ifdef __cplusplus
@@ -169,14 +168,14 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 12 "grammar.y"
+#line 11 "grammar.y"
 
 	int ival;
 	char* string;
 	astNode* node;	
 	vector<astNode*>* stmt_vec;
 
-#line 180 "y.tab.c"
+#line 179 "y.tab.c"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -630,11 +629,11 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int8 yyrline[] =
 {
-       0,    33,    33,    37,    38,    42,    43,    47,    48,    52,
-      53,    61,    62,    66,    70,    71,    75,    76,    77,    78,
-      79,    80,    84,    85,    86,    90,    91,    95,    96,   100,
-     101,   102,   103,   104,   108,   109,   110,   111,   112,   113,
-     117,   118,   123
+       0,    32,    32,    36,    37,    41,    42,    46,    47,    51,
+      52,    60,    61,    65,    69,    70,    74,    75,    76,    77,
+      78,    79,    83,    84,    85,    89,    90,    94,    95,    99,
+     100,   101,   102,   103,   107,   108,   109,   110,   111,   112,
+     116,   117,   122
 };
 #endif
 
@@ -1261,257 +1260,257 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* minic: extern extern func_def  */
-#line 33 "grammar.y"
-                               { (yyval.node) = createProg((yyvsp[-2].node), (yyvsp[-1].node), (yyvsp[0].node)); printNode((yyval.node)); freeNode((yyval.node)); }
-#line 1267 "y.tab.c"
+#line 32 "grammar.y"
+                               { (yyval.node) = createProg((yyvsp[-2].node), (yyvsp[-1].node), (yyvsp[0].node)); root = (yyval.node); }
+#line 1266 "y.tab.c"
     break;
 
   case 3: /* extern: EXTERN VOID PRINT '(' INT ')' ';'  */
-#line 37 "grammar.y"
+#line 36 "grammar.y"
                                           { (yyval.node) = createExtern((yyvsp[-4].string)); free((yyvsp[-4].string)); }
-#line 1273 "y.tab.c"
+#line 1272 "y.tab.c"
     break;
 
   case 4: /* extern: EXTERN INT READ '(' ')' ';'  */
-#line 38 "grammar.y"
+#line 37 "grammar.y"
                                     { (yyval.node) = createExtern((yyvsp[-3].string)); free((yyvsp[-3].string)); }
-#line 1279 "y.tab.c"
+#line 1278 "y.tab.c"
     break;
 
   case 5: /* func_def: INT NAME '(' INT NAME ')' block_statement  */
-#line 42 "grammar.y"
+#line 41 "grammar.y"
                                                   { (yyval.node) = createFunc((yyvsp[-5].string), createVar((yyvsp[-2].string)), (yyvsp[0].node)); free((yyvsp[-5].string)); free((yyvsp[-2].string)); }
-#line 1285 "y.tab.c"
+#line 1284 "y.tab.c"
     break;
 
   case 6: /* func_def: INT NAME '(' ')' block_statement  */
-#line 43 "grammar.y"
+#line 42 "grammar.y"
                                          { (yyval.node) = createFunc((yyvsp[-3].string), NULL, (yyvsp[0].node)); free((yyvsp[-3].string)); }
-#line 1291 "y.tab.c"
+#line 1290 "y.tab.c"
     break;
 
   case 7: /* term: NAME  */
-#line 47 "grammar.y"
+#line 46 "grammar.y"
              { (yyval.node) = createVar((yyvsp[0].string)); free((yyvsp[0].string)); }
-#line 1297 "y.tab.c"
+#line 1296 "y.tab.c"
     break;
 
   case 8: /* term: NUM  */
-#line 48 "grammar.y"
+#line 47 "grammar.y"
             { (yyval.node) = createCnst((yyvsp[0].ival)); }
-#line 1303 "y.tab.c"
+#line 1302 "y.tab.c"
     break;
 
   case 9: /* block_statement: '{' statements '}'  */
-#line 52 "grammar.y"
+#line 51 "grammar.y"
                            { (yyval.node) = createBlock((yyvsp[-1].stmt_vec)); }
-#line 1309 "y.tab.c"
+#line 1308 "y.tab.c"
     break;
 
   case 10: /* block_statement: '{' var_decs statements '}'  */
-#line 53 "grammar.y"
+#line 52 "grammar.y"
                                     { 
 			(yyvsp[-2].stmt_vec)->insert((yyvsp[-2].stmt_vec)->end(), (yyvsp[-1].stmt_vec)->begin(), (yyvsp[-1].stmt_vec)->end()); 
 			delete((yyvsp[-1].stmt_vec)); 
 			(yyval.node) = createBlock((yyvsp[-2].stmt_vec)); 
 		}
-#line 1319 "y.tab.c"
+#line 1318 "y.tab.c"
     break;
 
   case 11: /* var_decs: var_decs declaration  */
-#line 61 "grammar.y"
+#line 60 "grammar.y"
                              { (yyval.stmt_vec) = (yyvsp[-1].stmt_vec); (yyval.stmt_vec)->push_back((yyvsp[0].node)); }
-#line 1325 "y.tab.c"
+#line 1324 "y.tab.c"
     break;
 
   case 12: /* var_decs: declaration  */
-#line 62 "grammar.y"
+#line 61 "grammar.y"
                     { (yyval.stmt_vec) = new vector<astNode*>(); (yyval.stmt_vec)->push_back((yyvsp[0].node)); }
-#line 1331 "y.tab.c"
+#line 1330 "y.tab.c"
     break;
 
   case 13: /* declaration: INT NAME ';'  */
-#line 66 "grammar.y"
+#line 65 "grammar.y"
                      { (yyval.node) = createDecl((yyvsp[-1].string)); free((yyvsp[-1].string)); }
-#line 1337 "y.tab.c"
+#line 1336 "y.tab.c"
     break;
 
   case 14: /* statements: statements statement  */
-#line 70 "grammar.y"
+#line 69 "grammar.y"
                              { (yyval.stmt_vec) = (yyvsp[-1].stmt_vec); (yyval.stmt_vec)->push_back((yyvsp[0].node)); }
-#line 1343 "y.tab.c"
+#line 1342 "y.tab.c"
     break;
 
   case 15: /* statements: statement  */
-#line 71 "grammar.y"
+#line 70 "grammar.y"
                   { (yyval.stmt_vec) = new vector<astNode*>(); (yyval.stmt_vec)->push_back((yyvsp[0].node)); }
-#line 1349 "y.tab.c"
+#line 1348 "y.tab.c"
     break;
 
   case 16: /* statement: assign_statement  */
-#line 75 "grammar.y"
+#line 74 "grammar.y"
                          { (yyval.node) = (yyvsp[0].node); }
-#line 1355 "y.tab.c"
+#line 1354 "y.tab.c"
     break;
 
   case 17: /* statement: if_statement  */
-#line 76 "grammar.y"
+#line 75 "grammar.y"
                      { (yyval.node) = (yyvsp[0].node); }
-#line 1361 "y.tab.c"
+#line 1360 "y.tab.c"
     break;
 
   case 18: /* statement: while_loop  */
-#line 77 "grammar.y"
+#line 76 "grammar.y"
                    { (yyval.node) = (yyvsp[0].node); }
-#line 1367 "y.tab.c"
+#line 1366 "y.tab.c"
     break;
 
   case 19: /* statement: block_statement  */
-#line 78 "grammar.y"
+#line 77 "grammar.y"
                         { (yyval.node) = (yyvsp[0].node); }
-#line 1373 "y.tab.c"
+#line 1372 "y.tab.c"
     break;
 
   case 20: /* statement: call_statement  */
-#line 79 "grammar.y"
+#line 78 "grammar.y"
                        { (yyval.node) = (yyvsp[0].node); }
-#line 1379 "y.tab.c"
+#line 1378 "y.tab.c"
     break;
 
   case 21: /* statement: return_statement  */
-#line 80 "grammar.y"
+#line 79 "grammar.y"
                          { (yyval.node) = (yyvsp[0].node); }
-#line 1385 "y.tab.c"
+#line 1384 "y.tab.c"
     break;
 
   case 22: /* assign_statement: NAME '=' expression ';'  */
-#line 84 "grammar.y"
+#line 83 "grammar.y"
                                 { (yyval.node) = createAsgn(createVar((yyvsp[-3].string)), (yyvsp[-1].node)); free((yyvsp[-3].string)); }
-#line 1391 "y.tab.c"
+#line 1390 "y.tab.c"
     break;
 
   case 23: /* assign_statement: NAME '=' term ';'  */
-#line 85 "grammar.y"
+#line 84 "grammar.y"
                           { (yyval.node) = createAsgn(createVar((yyvsp[-3].string)), (yyvsp[-1].node)); free((yyvsp[-3].string)); }
-#line 1397 "y.tab.c"
+#line 1396 "y.tab.c"
     break;
 
   case 24: /* assign_statement: NAME '=' READ '(' ')' ';'  */
-#line 86 "grammar.y"
+#line 85 "grammar.y"
                                   { (yyval.node) = createAsgn(createVar((yyvsp[-5].string)), createCall((yyvsp[-3].string))); free((yyvsp[-5].string)); free((yyvsp[-3].string)); }
-#line 1403 "y.tab.c"
+#line 1402 "y.tab.c"
     break;
 
   case 25: /* call_statement: PRINT '(' expression ')' ';'  */
-#line 90 "grammar.y"
+#line 89 "grammar.y"
                                      { (yyval.node) = createCall((yyvsp[-4].string), (yyvsp[-2].node)); free((yyvsp[-4].string)); }
-#line 1409 "y.tab.c"
+#line 1408 "y.tab.c"
     break;
 
   case 26: /* call_statement: PRINT '(' term ')' ';'  */
-#line 91 "grammar.y"
+#line 90 "grammar.y"
                                { (yyval.node) = createCall((yyvsp[-4].string), (yyvsp[-2].node)); free((yyvsp[-4].string)); }
-#line 1415 "y.tab.c"
+#line 1414 "y.tab.c"
     break;
 
   case 27: /* return_statement: RETURN term ';'  */
-#line 95 "grammar.y"
+#line 94 "grammar.y"
                         { (yyval.node) = createRet((yyvsp[-1].node)); }
-#line 1421 "y.tab.c"
+#line 1420 "y.tab.c"
     break;
 
   case 28: /* return_statement: RETURN expression ';'  */
-#line 96 "grammar.y"
+#line 95 "grammar.y"
                               { (yyval.node) = createRet((yyvsp[-1].node)); }
-#line 1427 "y.tab.c"
+#line 1426 "y.tab.c"
     break;
 
   case 29: /* expression: term '+' term  */
-#line 100 "grammar.y"
+#line 99 "grammar.y"
                       { (yyval.node) = createBExpr((yyvsp[-2].node), (yyvsp[0].node), add); }
-#line 1433 "y.tab.c"
+#line 1432 "y.tab.c"
     break;
 
   case 30: /* expression: term '-' term  */
-#line 101 "grammar.y"
+#line 100 "grammar.y"
                       { (yyval.node) = createBExpr((yyvsp[-2].node), (yyvsp[0].node), sub); }
-#line 1439 "y.tab.c"
+#line 1438 "y.tab.c"
     break;
 
   case 31: /* expression: term '/' term  */
-#line 102 "grammar.y"
+#line 101 "grammar.y"
                       { (yyval.node) = createBExpr((yyvsp[-2].node), (yyvsp[0].node), divide); }
-#line 1445 "y.tab.c"
+#line 1444 "y.tab.c"
     break;
 
   case 32: /* expression: term '*' term  */
-#line 103 "grammar.y"
+#line 102 "grammar.y"
                       { (yyval.node) = createBExpr((yyvsp[-2].node), (yyvsp[0].node), mul); }
-#line 1451 "y.tab.c"
+#line 1450 "y.tab.c"
     break;
 
   case 33: /* expression: '-' term  */
-#line 104 "grammar.y"
+#line 103 "grammar.y"
                  { (yyval.node) = createUExpr((yyvsp[0].node), uminus); }
-#line 1457 "y.tab.c"
+#line 1456 "y.tab.c"
     break;
 
   case 34: /* condition: '(' term LT term ')'  */
-#line 108 "grammar.y"
+#line 107 "grammar.y"
                              { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), lt); }
-#line 1463 "y.tab.c"
+#line 1462 "y.tab.c"
     break;
 
   case 35: /* condition: '(' term GT term ')'  */
-#line 109 "grammar.y"
+#line 108 "grammar.y"
                              { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), gt); }
-#line 1469 "y.tab.c"
+#line 1468 "y.tab.c"
     break;
 
   case 36: /* condition: '(' term LE term ')'  */
-#line 110 "grammar.y"
+#line 109 "grammar.y"
                              { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), le); }
-#line 1475 "y.tab.c"
+#line 1474 "y.tab.c"
     break;
 
   case 37: /* condition: '(' term GE term ')'  */
-#line 111 "grammar.y"
+#line 110 "grammar.y"
                              { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), ge); }
-#line 1481 "y.tab.c"
+#line 1480 "y.tab.c"
     break;
 
   case 38: /* condition: '(' term EQ term ')'  */
-#line 112 "grammar.y"
+#line 111 "grammar.y"
                              { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), eq); }
-#line 1487 "y.tab.c"
+#line 1486 "y.tab.c"
     break;
 
   case 39: /* condition: '(' term NEQ term ')'  */
-#line 113 "grammar.y"
+#line 112 "grammar.y"
                               { (yyval.node) = createRExpr((yyvsp[-3].node), (yyvsp[-1].node), neq); }
-#line 1493 "y.tab.c"
+#line 1492 "y.tab.c"
     break;
 
   case 40: /* if_statement: IF condition statement  */
-#line 117 "grammar.y"
+#line 116 "grammar.y"
                                { (yyval.node) = createIf((yyvsp[-1].node), (yyvsp[0].node)); }
-#line 1499 "y.tab.c"
+#line 1498 "y.tab.c"
     break;
 
   case 41: /* if_statement: IF condition statement ELSE statement  */
-#line 118 "grammar.y"
+#line 117 "grammar.y"
                                               { (yyval.node) = createIf((yyvsp[-3].node), (yyvsp[-2].node), (yyvsp[0].node)); }
-#line 1505 "y.tab.c"
+#line 1504 "y.tab.c"
     break;
 
   case 42: /* while_loop: WHILE condition statement  */
-#line 123 "grammar.y"
+#line 122 "grammar.y"
                                   { (yyval.node) = createWhile((yyvsp[-1].node), (yyvsp[0].node)); }
-#line 1511 "y.tab.c"
+#line 1510 "y.tab.c"
     break;
 
 
-#line 1515 "y.tab.c"
+#line 1514 "y.tab.c"
 
       default: break;
     }
@@ -1704,23 +1703,7 @@ yyreturnlab:
   return yyresult;
 }
 
-#line 126 "grammar.y"
-
-
-int main(int argc, char** argv){
-	if (argc == 2){
-		yyin = fopen(argv[1], "r");
-	}
-
-	yyparse();
-
-	if (yyin != stdin)
-		fclose(yyin);
-
-	yylex_destroy();
-	
-	return 0;
-}
+#line 125 "grammar.y"
 
 
 void yyerror(const char *){

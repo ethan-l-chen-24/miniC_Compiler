@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include "./ast/ast.h"
 void yyerror(const char *);
-extern int yylex();
-extern int yylex_destroy();
-extern FILE *yyin;
 extern int yylineno;
-extern char* yytext;
+extern int yylex();
+
+extern astNode* root;
 %}
 
 %union {
@@ -30,7 +29,7 @@ extern char* yytext;
 %start minic
 %%
 minic:
-	extern extern func_def { $$ = createProg($1, $2, $3); printNode($$); freeNode($$); }
+	extern extern func_def { $$ = createProg($1, $2, $3); root = $$; }
 	;
 
 extern:
@@ -124,22 +123,6 @@ while_loop:
 	;
 
 %%
-
-int main(int argc, char** argv){
-	if (argc == 2){
-		yyin = fopen(argv[1], "r");
-	}
-
-	yyparse();
-
-	if (yyin != stdin)
-		fclose(yyin);
-
-	yylex_destroy();
-	
-	return 0;
-}
-
 
 void yyerror(const char *){
 	fprintf(stdout, "Syntax error %d\n", yylineno);
