@@ -75,9 +75,9 @@ bool semanticAnalysis(astNode* node) {
 
         // traverse nodes
         case(ast_prog):
-            result &= semanticAnalysis(node->prog.ext1) // unnecessary
-                && semanticAnalysis(node->prog.ext2) // unnecessary
-                && semanticAnalysis(node->prog.func);
+            result &= semanticAnalysis(node->prog.ext1); // unnecessary
+            result &= semanticAnalysis(node->prog.ext2); // unnecessary
+            result &= semanticAnalysis(node->prog.func);
             break;
 
         // handle block and declaration statements
@@ -103,14 +103,14 @@ bool semanticAnalysis(astNode* node) {
 
         // traverse nodes
         case(ast_rexpr):
-            result &= semanticAnalysis(node->rexpr.lhs)
-                && semanticAnalysis(node->rexpr.rhs);
+            result &= semanticAnalysis(node->rexpr.lhs);
+            result &= semanticAnalysis(node->rexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_bexpr):
-            result &= semanticAnalysis(node->bexpr.lhs)
-                && semanticAnalysis(node->bexpr.rhs);
+            result &= semanticAnalysis(node->bexpr.lhs);
+            result &= semanticAnalysis(node->bexpr.rhs);
             break;
 
         // traverse nodes
@@ -127,7 +127,7 @@ bool semanticAnalysis(astNode* node) {
                 current_symbols->push_back(node->func.param->var.name);
             }
 
-            result = semanticAnalysis(node->func.body); // traverse into body of function
+            result &= semanticAnalysis(node->func.body); // traverse into body of function
 
             // free the front symbol vector
             stack.pop_front();
@@ -165,14 +165,14 @@ bool handleStatements(astNode* node) {
 
         // traverse nodes
         case(ast_while):
-            result &= semanticAnalysis(node->stmt.whilen.cond)
-                && semanticAnalysis(node->stmt.whilen.body);
+            result &= semanticAnalysis(node->stmt.whilen.cond);
+            result &= semanticAnalysis(node->stmt.whilen.body);
             break;
 
         // traverse nodes
         case(ast_if):
-            result &= semanticAnalysis(node->stmt.ifn.cond) 
-                && semanticAnalysis(node->stmt.ifn.if_body);
+            result &= semanticAnalysis(node->stmt.ifn.cond);
+            result &= semanticAnalysis(node->stmt.ifn.if_body);
             if(node->stmt.ifn.else_body != NULL) {
                 result &= semanticAnalysis(node->stmt.ifn.else_body);
             }
@@ -180,8 +180,8 @@ bool handleStatements(astNode* node) {
 
         // traverse nodes
         case(ast_asgn):
-            result &= semanticAnalysis(node->stmt.asgn.lhs)
-                && semanticAnalysis(node->stmt.asgn.rhs);
+            result &= semanticAnalysis(node->stmt.asgn.lhs);
+            result &= semanticAnalysis(node->stmt.asgn.rhs);
             break;
 
         // if a block statement, create new var list and iterate statements
@@ -234,7 +234,8 @@ bool onSymbolTable(char* var) {
 
 /* main semantic analysis method - 
  * traverses nodes and handles them according to type 
- * optimized using a set for faster runtime */
+ * optimized using a set for faster runtime;
+ * additionally throws errors in re-declarations */
 bool semanticAnalysis_opt(astNode* node) {  
 
     bool result = true;
@@ -243,9 +244,9 @@ bool semanticAnalysis_opt(astNode* node) {
 
         // traverse nodes
         case(ast_prog):
-            result &= semanticAnalysis_opt(node->prog.ext1) // unnecessary
-                && semanticAnalysis_opt(node->prog.ext2) // unnecessary
-                && semanticAnalysis_opt(node->prog.func);
+            result &= semanticAnalysis_opt(node->prog.ext1); // unnecessary
+            result &= semanticAnalysis_opt(node->prog.ext2); // unnecessary
+            result &= semanticAnalysis_opt(node->prog.func);
             break;
 
         // handle block and declaration statements
@@ -271,14 +272,14 @@ bool semanticAnalysis_opt(astNode* node) {
 
         // traverse nodes
         case(ast_rexpr):
-            result &= semanticAnalysis_opt(node->rexpr.lhs)
-                && semanticAnalysis_opt(node->rexpr.rhs);
+            result &= semanticAnalysis_opt(node->rexpr.lhs);
+            result &= semanticAnalysis_opt(node->rexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_bexpr):
-            result &= semanticAnalysis_opt(node->bexpr.lhs)
-                && semanticAnalysis_opt(node->bexpr.rhs);
+            result &= semanticAnalysis_opt(node->bexpr.lhs);
+            result &= semanticAnalysis_opt(node->bexpr.rhs);
             break;
 
         // traverse nodes
@@ -296,7 +297,7 @@ bool semanticAnalysis_opt(astNode* node) {
                 activeSymbols.insert(string(node->func.param->var.name));
             }
 
-            result = semanticAnalysis_opt(node->func.body); // traverse into body of function
+            result &= semanticAnalysis_opt(node->func.body); // traverse into body of function
 
             // free the front symbol vector
             stack.pop_front();
@@ -343,14 +344,14 @@ bool handleStatements_opt(astNode* node) {
 
         // traverse nodes
         case(ast_while):
-            result &= semanticAnalysis_opt(node->stmt.whilen.cond)
-                && semanticAnalysis_opt(node->stmt.whilen.body);
+            result &= semanticAnalysis_opt(node->stmt.whilen.cond);
+            result &= semanticAnalysis_opt(node->stmt.whilen.body);
             break;
 
         // traverse nodes
         case(ast_if):
-            result &= semanticAnalysis_opt(node->stmt.ifn.cond) 
-                && semanticAnalysis_opt(node->stmt.ifn.if_body);
+            result &= semanticAnalysis_opt(node->stmt.ifn.cond);
+            result &= semanticAnalysis_opt(node->stmt.ifn.if_body);
             if(node->stmt.ifn.else_body != NULL) {
                 result &= semanticAnalysis_opt(node->stmt.ifn.else_body);
             }
@@ -358,8 +359,8 @@ bool handleStatements_opt(astNode* node) {
 
         // traverse nodes
         case(ast_asgn):
-            result &= semanticAnalysis_opt(node->stmt.asgn.lhs)
-                && semanticAnalysis_opt(node->stmt.asgn.rhs);
+            result &= semanticAnalysis_opt(node->stmt.asgn.lhs);
+            result &= semanticAnalysis_opt(node->stmt.asgn.rhs);
             break;
 
         // if a block statement, create new var list and iterate statements

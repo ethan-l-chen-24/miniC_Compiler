@@ -3,7 +3,7 @@ yacc_source = grammar
 lib = ast/ast
 main = syntax_analyzer
 source = syntax
-test_file = p1
+test_file = p4
 
 all: build test
 	
