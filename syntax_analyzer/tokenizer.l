@@ -1,7 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
-#include "../ast/ast.h"
+#include "../lib/ast/ast.h"
 #include "y.tab.h"
 %}
 

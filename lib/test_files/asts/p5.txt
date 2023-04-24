@@ -1,0 +1,32 @@
+Prog:
+ Func: func
+  Var: i
+  Stmt: 
+   Block:
+    Stmt: 
+     Decl: a
+    Stmt: 
+     Decl: b
+    Stmt: 
+     While: cond 
+      RExpr: 
+       Var: a
+       Var: i
+     While: body 
+      Stmt: 
+       Block:
+        Stmt: 
+         Decl: a
+        Stmt: 
+         Asgn: lhs
+          Var: a
+         Asgn: rhs
+          Stmt: 
+           Call: name Read
+        Stmt: 
+         Asgn: lhs
+          Var: b
+         Asgn: rhs
+          BExpr: 
+           Const: 10
+           Var: a

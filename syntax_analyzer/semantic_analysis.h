@@ -2,7 +2,7 @@
 #include<deque>
 #include<set>
 #include<string>
-#include "../ast/ast.h"
+#include "../lib/ast/ast.h"
 
 /* FUNCTIONS */
 /* --------- */
