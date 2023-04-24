@@ -32,6 +32,7 @@ bool onSymbolTable(char* var);
 bool semanticAnalysis_opt(astNode* node);
 bool handleStatements_opt(astNode* node);
 bool onSymbolTable_opt(string var);
+bool onFrontSymbolTable_opt(char* var);
 void deleteNonActiveSymbols_opt(vector<char*>* symbols);
 
 /* METHODS */
@@ -321,7 +322,7 @@ bool handleStatements_opt(astNode* node) {
         // if a declaration, add var to list in top of stack
         case(ast_decl):
             // error if already exists - duplicate declaration
-            if(onSymbolTable_opt(string(node->stmt.decl.name))) {
+            if(onFrontSymbolTable_opt(node->stmt.decl.name)) {
                 fprintf(stdout, "Symbol error: var [%s] has already been declared\n\n", node->stmt.decl.name);
                 result = false;
                 break;
@@ -391,6 +392,21 @@ bool handleStatements_opt(astNode* node) {
  * optimized using a set */
 bool onSymbolTable_opt(string var) { 
     return (activeSymbols.find(var) != activeSymbols.end());
+}
+
+/* checks if a variable is on the top symbol table vector */
+bool onFrontSymbolTable_opt(char* var) { 
+    // loop through all symbols on top vector and check if any are equal to the var
+    vector<char*>* symbols = stack.front();
+    vector<char*>::iterator it = symbols->begin();
+    while(it != symbols->end()) {
+        if(strcmp(*it, var) == 0) { // if equal return true
+            return true;
+        }
+        it++;
+    }
+
+    return false;
 }
 
 /* deletes any symbols in the given symbol table from the symbol set */
