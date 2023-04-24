@@ -1,6 +1,6 @@
 %{
 #include <stdio.h>
-#include "./ast/ast.h"
+#include "../ast/ast.h"
 void yyerror(const char *);
 extern int yylineno;
 extern int yylex();
