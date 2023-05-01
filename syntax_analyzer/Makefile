@@ -3,7 +3,7 @@ yacc_source = grammar
 lib = ../lib/ast/ast
 main = syntax_analyzer
 source = syntax
-folder = ../lib/test_files/semantic_tests
+folder = ../lib/test_files/files
 test_file = p1
 	
 build: $(yacc_source).y $(lex_source).l $(lib).c semantic_analysis.c $(main).c
@@ -24,9 +24,9 @@ debug:
 	gdb --args ./$(source).out $(folder)/$(test_file).c
 
 tree:
-	./$(source).out $(folder)/$(test_file).c > asts/$(test_file).txt
+	./$(source).out $(folder)/$(test_file).c > ../lib/test_files/asts/$(test_file).txt
 
 tokens:
 	lex $(lex_source)_output.l
 	gcc -o $(source)_output.out lex.yy.c
-	./$(source)_output.out < $(folder)/$(test_file).c > tokenized/$(test_file).txt
+	./$(source)_output.out < $(folder)/$(test_file).c > ../lib/test_files/tokenized/$(test_file).txt

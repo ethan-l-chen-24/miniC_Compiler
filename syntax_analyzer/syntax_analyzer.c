@@ -38,7 +38,7 @@ int main(int argc, char** argv){
     printf("\nRESULT:\n---------\n");
 
     // check semantics of the program
-    bool valid_semantics = semanticAnalysis_opt(root); // run with or without _opt extension - _opt trades memory for runtime
+    bool validSemantics = semanticAnalysis_opt(root); // run with or without _opt extension - _opt trades memory for runtime
     freeNode(root);
 
     // close
@@ -47,7 +47,7 @@ int main(int argc, char** argv){
 	yylex_destroy();
 	
     // return if failure
-    if(!valid_semantics) return 1;
+    if(!validSemantics) return 1;
 
     printf("Looks good to me!\n\n");
 	return 0;

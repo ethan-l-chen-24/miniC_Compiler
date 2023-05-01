@@ -92,7 +92,8 @@ call_statement:
 
 return_statement:
 	RETURN term ';' { $$ = createRet($2); } |
-	RETURN expression ';' { $$ = createRet($2); }
+	RETURN expression ';' { $$ = createRet($2); } |
+	RETURN READ '(' ')' ';' { $$ = createRet(createCall($2)); free($2); }
 	;
 
 expression:

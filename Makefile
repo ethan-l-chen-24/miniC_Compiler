@@ -17,8 +17,8 @@ compile: main.c
 	./$(source).out $(folder)/$(test_file).c
 
 clean:
-	rm $(source).out
 	make -C syntax_analyzer clean
 	make -C llvm_ir_builder clean
 	make -C optimizer clean
 	make -C assembly_generator clean
+	rm $(source).out

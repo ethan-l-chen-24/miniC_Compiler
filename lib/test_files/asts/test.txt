@@ -1,0 +1,77 @@
+AST:
+--------------
+Prog:
+ Func: func
+  Var: i
+  Stmt: 
+   Block:
+    Stmt: 
+     Decl: a
+    Stmt: 
+     Decl: b
+    Stmt: 
+     If: cond
+      RExpr: 
+       Var: a
+       Var: i
+     If: body
+      Stmt: 
+       Block:
+        Stmt: 
+         Asgn: lhs
+          Var: b
+         Asgn: rhs
+          Var: a
+     Else: body
+      Stmt: 
+       If: cond
+        RExpr: 
+         Var: a
+         Const: 3
+       If: body
+        Stmt: 
+         Block:
+          Stmt: 
+           Asgn: lhs
+            Var: b
+           Asgn: rhs
+            Const: 3
+       Else: body
+        Stmt: 
+         Block:
+          Stmt: 
+           Call: name Print
+           Call: param
+            Var: a
+    Stmt: 
+     While: cond 
+      RExpr: 
+       Var: a
+       Var: i
+     While: body 
+      Stmt: 
+       Block:
+        Stmt: 
+         Decl: a
+        Stmt: 
+         Asgn: lhs
+          Var: a
+         Asgn: rhs
+          Stmt: 
+           Call: name Read
+        Stmt: 
+         Asgn: lhs
+          Var: b
+         Asgn: rhs
+          BExpr: 
+           Const: 10
+           Var: a
+    Stmt: 
+     Ret:
+      Stmt: 
+       Call: name Read
+
+RESULT:
+---------
+Looks good to me!
+

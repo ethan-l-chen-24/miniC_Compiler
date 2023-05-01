@@ -5,7 +5,7 @@ int func(int i){
 	int a;
 	int b;
 
-    if(a < i) {
+    if(i < a) {
         b = a;
     } else if(a > 3) {
         b = 3;
@@ -16,6 +16,9 @@ int func(int i){
 	while (a < i){
 		int a;
 		a = read();
-		b = 10 + a;
+		b = 10 - a;
+        return b;
 	}
+
+    return read();
 }

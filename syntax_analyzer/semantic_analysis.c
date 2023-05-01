@@ -1,3 +1,7 @@
+/* 
+ * Library of semantic analysis functions
+*/
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<assert.h>
