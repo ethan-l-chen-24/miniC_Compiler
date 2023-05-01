@@ -9,6 +9,18 @@
 #include "semantic_analysis.h"
 using namespace std;
 
+/* FUNCTION PROTOTYPES */
+/* ------------------- */
+// non-optimized
+bool handleStatements(astNode* node);
+bool onSymbolTable(char* var);
+
+// optimized
+bool handleStatements_opt(astNode* node);
+bool onSymbolTable_opt(string var);
+bool onFrontSymbolTable_opt(char* var);
+void deleteNonActiveSymbols_opt(vector<char*>* symbols);
+
 /* GLOBAL VARS */
 /* ----------- */
 

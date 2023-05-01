@@ -39,16 +39,20 @@ int main(int argc, char** argv){
 
     // generate the AST
 	yyparse();
+    printf("SUCCESS: AST Generated\n");
 
     // check semantics of the program
     bool valid_semantics = semanticAnalysis_opt(root); // run with or without _opt extension - _opt trades memory for runtime
 
     if(!valid_semantics) {
         endProgram();
+        printf("FAILURE: Semantics Failed\n");
         return 1;
     }
+    printf("SUCCESS: Semantics Checked\n");
 
     // convert to LLVM IR
+    printf("HERE");
 
     // Optimize the LLVM IR
 
