@@ -3,6 +3,7 @@
 */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "llvm_gen.h"
 #include <map>
 #include<string>
@@ -12,19 +13,26 @@ using namespace std;
 /* FUNCTION PROTOTYPES */
 /* ------------------- */
 
-void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMBasicBlockRef returnBlock);
-void getDeclarations(astNode* node, LLVMBuilderRef builder);
-void handleStatements(astNode* node, LLVMBuilderRef builder);
+void traverseAST(astNode* node);
+void getDeclarations(astNode* node);
+void handleStatements_decs(astNode* node);
 
-LLVMValueRef getLLVMCondition(astNode* node, LLVMBuilderRef builder);
-LLVMValueRef getLLVMExpression(astNode* node, LLVMBuilderRef builder);
-LLVMValueRef getTerm(astNode* node, LLVMBuilderRef builder, bool negative);
+LLVMValueRef getLLVMCondition(astNode* node);
+LLVMValueRef getLLVMExpression(astNode* node);
+LLVMValueRef getTerm(astNode* node, bool negative);
 
 
 /* GLOBAL VARIABLES */
 /* ---------------- */
 
 map<string, LLVMValueRef> vars; 
+LLVMValueRef func;
+LLVMValueRef printFunc;
+LLVMValueRef readFunc;
+LLVMTypeRef printType;
+LLVMTypeRef readType;
+LLVMBasicBlockRef returnBlock;
+LLVMBuilderRef builder;
 
 /* METHODS */
 /* ------- */
@@ -37,8 +45,30 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
     LLVMModuleRef mod = LLVMModuleCreateWithName("");
     LLVMSetTarget(mod, "x86_64-pc-linux-gnu");
 
+    // create extern functions
+    if(root->prog.ext1 != NULL) {
+        if(strcmp(root->prog.ext1->ext.name, "Print") == 0) {
+            LLVMTypeRef param_types[] = { LLVMInt32Type() };
+            printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
+            printFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, printType);
+        } else if(strcmp(root->prog.ext1->ext.name, "Read") == 0) {
+            readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
+            readFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, readType);
+        }
+    }
+
+    if(root->prog.ext2 != NULL) {
+        if(strcmp(root->prog.ext2->ext.name, "Print") == 0) {
+            LLVMTypeRef param_types[] = { LLVMInt32Type() };
+            printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
+            printFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, printType);
+        } else if(strcmp(root->prog.ext2->ext.name, "Read") == 0) {
+            readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
+            readFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, readType);
+        }
+    }
+
     // create function with module
-    LLVMValueRef func;
     if(root->prog.func->func.param != NULL) {
         LLVMTypeRef param_types[] = { LLVMInt32Type() };
         LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 0);
@@ -50,13 +80,13 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
 
     // build first basic block for function wrapper
     LLVMBasicBlockRef first = LLVMAppendBasicBlock(func, "");
-    LLVMBuilderRef builder = LLVMCreateBuilder();
+    builder = LLVMCreateBuilder();
     LLVMPositionBuilderAtEnd(builder, first);
     LLVMValueRef returnVal = LLVMBuildAlloca(builder, LLVMInt32Type(), "RETURN");
     vars["return"] = returnVal;
 
     // initialize return block with return statement for return value
-    LLVMBasicBlockRef returnBlock = LLVMAppendBasicBlock(func, "");
+    returnBlock = LLVMAppendBasicBlock(func, "");
     LLVMPositionBuilderAtEnd(builder, returnBlock);
     LLVMBuildRet(builder, returnVal);
     LLVMPositionBuilderAtEnd(builder, first);
@@ -66,14 +96,14 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
         LLVMValueRef param = LLVMBuildAlloca(builder, LLVMInt32Type(), root->prog.func->func.param->var.name);
         LLVMSetAlignment(param, 4);
         vars[root->prog.func->func.param->var.name] = param;
-        getDeclarations(root->prog.func->func.body, builder); // add all other allocations of variables in the program
+        getDeclarations(root->prog.func->func.body); // add all other allocations of variables in the program
         LLVMBuildStore(builder, LLVMGetParam(func, 0), param);
     } else {
-        getDeclarations(root->prog.func->func.body, builder); // add all other allocations of variables in the program
+        getDeclarations(root->prog.func->func.body); // add all other allocations of variables in the program
     }
 
     // traverse the ast
-    traverseAST(root->prog.func->func.body, func, builder, returnBlock);
+    traverseAST(root->prog.func->func.body);
     LLVMDisposeBuilder(builder);
    
     return mod;
@@ -82,7 +112,7 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
 /* traverses the statements of an ast and 
  * builds the basic blocks accordingly
  */
-void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMBasicBlockRef returnBlock) {
+void traverseAST(astNode* node) {
 
     switch(node->stmt.type) {
 
@@ -92,7 +122,10 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
         }
 
         case(ast_call): {
-            // skip until know how to do this
+            if(strcmp(node->stmt.call.name, "Print") == 0) {
+                LLVMValueRef args[] = { getLLVMExpression(node->stmt.call.param) };
+                LLVMBuildCall2(builder, printType, printFunc, args, 1, "");
+            }
             break;
         }
 
@@ -103,7 +136,7 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
 
             // assign proper return value and branch to return block
             LLVMPositionBuilderAtEnd(builder, assignRetVal_BB);
-            LLVMValueRef expr = getLLVMExpression(node->stmt.ret.expr, builder);
+            LLVMValueRef expr = getLLVMExpression(node->stmt.ret.expr);
             LLVMBuildStore(builder, expr, vars["return"]);
             LLVMBuildBr(builder, returnBlock);
 
@@ -121,11 +154,11 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
 
             // create condition and looping structure
             LLVMPositionBuilderAtEnd(builder, condition_BB);
-            LLVMValueRef condition = getLLVMCondition(node->stmt.whilen.cond, builder);
+            LLVMValueRef condition = getLLVMCondition(node->stmt.whilen.cond);
             LLVMBuildCondBr(builder, condition, body_BB, final);
 
             LLVMPositionBuilderAtEnd(builder, body_BB);
-            traverseAST(node->stmt.whilen.body, func, builder, returnBlock);
+            traverseAST(node->stmt.whilen.body);
             LLVMBuildBr(builder, condition_BB);
 
             LLVMPositionBuilderAtEnd(builder, final);
@@ -142,16 +175,16 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
                 LLVMBasicBlockRef final = LLVMAppendBasicBlock(func, "");
 
                 // create condition
-                LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond, builder);
+                LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, else_BB);
 
                 // traverse through bodies of if, else, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
-                traverseAST(node->stmt.ifn.if_body, func, builder, returnBlock);
+                traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
 
                 LLVMPositionBuilderAtEnd(builder, else_BB);
-                traverseAST(node->stmt.ifn.else_body, func, builder, returnBlock);
+                traverseAST(node->stmt.ifn.else_body);
                 LLVMBuildBr(builder, final);
 
                 LLVMPositionBuilderAtEnd(builder, final);
@@ -163,12 +196,12 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
                 LLVMBasicBlockRef final = LLVMAppendBasicBlock(func, "");
 
                 // create condition
-                LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond, builder);
+                LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, final);
 
                 // traverse through bodies of if, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
-                traverseAST(node->stmt.ifn.if_body, func, builder, returnBlock);
+                traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
 
                 LLVMPositionBuilderAtEnd(builder, final);
@@ -178,7 +211,7 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
             
         case(ast_asgn): {
             // create an instruction for the given assignment statement
-            LLVMValueRef rhs = getLLVMExpression(node->stmt.asgn.rhs, builder);
+            LLVMValueRef rhs = getLLVMExpression(node->stmt.asgn.rhs);
             LLVMBuildStore(builder, rhs, vars[string(node->stmt.asgn.lhs->var.name)]);
             break;
         }
@@ -188,7 +221,7 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
             vector<astNode*>* slist = node->stmt.block.stmt_list;
             vector<astNode*>::iterator it = slist->begin();
             while(it != slist->end()) {
-                traverseAST(*it, func, builder, returnBlock);
+                traverseAST(*it);
                 it++;
             }
             break;
@@ -201,14 +234,14 @@ void traverseAST(astNode* node, LLVMValueRef func, LLVMBuilderRef builder, LLVMB
 /* performs an initial traversal of the tree to get all declarations
  * so they can be allocated at the beginning of the function
  */
-void getDeclarations(astNode* node, LLVMBuilderRef builder) {
+void getDeclarations(astNode* node) {
 
     // loop through statements and handle them
     vector<astNode*>* slist = node->stmt.block.stmt_list;
     vector<astNode*>::iterator it = slist->begin();
     while(it != slist->end()) {
         astNode* node = (astNode*) *it;
-        handleStatements(node, builder);        
+        handleStatements_decs(node);        
         it++;
     }
 
@@ -217,27 +250,27 @@ void getDeclarations(astNode* node, LLVMBuilderRef builder) {
 /* a helper method that handles statements in the initial traversal, 
  * creating value refs for them when declarations are reached
  */
-void handleStatements(astNode* node, LLVMBuilderRef builder) {
+void handleStatements_decs(astNode* node) {
     
     // traverse through all locations there could be declarations
     switch(node->stmt.type) {
             
             case(ast_block): {
-                getDeclarations(node, builder);
+                getDeclarations(node);
                 break;
             }
 
             case(ast_if): {
                 // handle if and else bodies
-                handleStatements(node->stmt.ifn.if_body, builder);
+                handleStatements_decs(node->stmt.ifn.if_body);
                 if(node->stmt.ifn.else_body != NULL) {
-                    handleStatements(node->stmt.ifn.else_body, builder);
+                    handleStatements_decs(node->stmt.ifn.else_body);
                 }
                 break;
             }
 
             case(ast_while): {
-                handleStatements(node->stmt.whilen.body, builder);
+                handleStatements_decs(node->stmt.whilen.body);
                 break;
             }
 
@@ -262,13 +295,13 @@ void handleStatements(astNode* node, LLVMBuilderRef builder) {
 /* builds a condition and returns a value ref that corresponds
  * to said condition
  */
-LLVMValueRef getLLVMCondition(astNode* node, LLVMBuilderRef builder) {
+LLVMValueRef getLLVMCondition(astNode* node) {
     
     LLVMValueRef cond;
 
     // build the left and right hand side
-    LLVMValueRef lhs = getTerm(node->rexpr.lhs, builder, false);
-    LLVMValueRef rhs = getTerm(node->rexpr.rhs, builder, false);
+    LLVMValueRef lhs = getTerm(node->rexpr.lhs, false);
+    LLVMValueRef rhs = getTerm(node->rexpr.rhs, false);
 
     // set the appropriate condition by operation
     switch(node->rexpr.op) {
@@ -310,7 +343,7 @@ LLVMValueRef getLLVMCondition(astNode* node, LLVMBuilderRef builder) {
 /* builds an expression and returns a value ref that corresponds
  * to said expression
  */
-LLVMValueRef getLLVMExpression(astNode* node, LLVMBuilderRef builder) {
+LLVMValueRef getLLVMExpression(astNode* node) {
 
     LLVMValueRef expr;
 
@@ -318,20 +351,20 @@ LLVMValueRef getLLVMExpression(astNode* node, LLVMBuilderRef builder) {
     switch(node->type) {
 
         case(ast_var): {
-            expr = getTerm(node, builder, false);
+            expr = getTerm(node, false);
             break;
         }
 
         case(ast_cnst): {
-            expr = getTerm(node, builder, false);
+            expr = getTerm(node, false);
             break;
         }
 
         case(ast_bexpr): {
             
             // build the left and right hand side
-            LLVMValueRef lhs = getTerm(node->bexpr.lhs, builder, false);
-            LLVMValueRef rhs = getTerm(node->bexpr.rhs, builder, false);
+            LLVMValueRef lhs = getTerm(node->bexpr.lhs, false);
+            LLVMValueRef rhs = getTerm(node->bexpr.rhs, false);
 
             // build the arithmetic operator
             switch(node->bexpr.op) {
@@ -364,18 +397,27 @@ LLVMValueRef getLLVMExpression(astNode* node, LLVMBuilderRef builder) {
         case(ast_uexpr): {
             // if the uexpr is operating on a variable, multiply the variable by 
             if(node->uexpr.expr->type == ast_var) {
-                LLVMValueRef term = getTerm(node->uexpr.expr, builder, false);
+                LLVMValueRef term = getTerm(node->uexpr.expr, false);
                 LLVMValueRef neg1 = LLVMConstInt(LLVMInt32Type(), -1, false);
                 expr = LLVMBuildMul(builder, term, neg1, "");
             } else {
                 // otherwise just set the term as negative
-                expr = getTerm(node->uexpr.expr, builder, true);
+                expr = getTerm(node->uexpr.expr, true);
             }
             break;
         }
 
-        default: { // TODO FIX THIS DEFAULT FOR EXTERN CALLS
-            expr = LLVMConstInt(LLVMInt32Type(), 1, false);
+        case(ast_stmt): { // TODO FIX THIS DEFAULT FOR EXTERN CALL
+            if(strcmp(node->stmt.call.name, "Read") == 0) {
+                LLVMValueRef args[] = {};
+                expr = LLVMBuildCall2(builder, readType, readFunc, args, 0, "");
+            } else {
+                expr = LLVMConstInt(LLVMInt32Type(), 1, false);
+            }
+            break;
+        }
+
+        default: {
             break;
         }
 
@@ -388,7 +430,7 @@ LLVMValueRef getLLVMExpression(astNode* node, LLVMBuilderRef builder) {
 /* gets a term as a value ref
  * will be either a constint or retrieving a variable using a load
  */
-LLVMValueRef getTerm(astNode* node, LLVMBuilderRef builder, bool negative) {
+LLVMValueRef getTerm(astNode* node, bool negative) {
     if(node->type == ast_var) { // variable - load
         return LLVMBuildLoad2(builder, LLVMInt32Type(), vars[node->var.name], "");
     } else { // constant
