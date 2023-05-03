@@ -6,7 +6,9 @@
 #include <string.h>
 #include "llvm_gen.h"
 #include <map>
-#include<string>
+#include <string>
+//#define NDEBUG
+#include <cassert>
 
 using namespace std;
 
@@ -41,40 +43,51 @@ LLVMBuilderRef builder;
  * traverses nodes and handles them according to type 
  */
 LLVMModuleRef createLLVMModelFromAST(astNode* root) {  
+    assert(root != NULL);
+
     // create module
     LLVMModuleRef mod = LLVMModuleCreateWithName("");
     LLVMSetTarget(mod, "x86_64-pc-linux-gnu");
 
     // create extern functions
+    assert(root->prog.ext1 != NULL);
     if(root->prog.ext1 != NULL) {
         if(strcmp(root->prog.ext1->ext.name, "Print") == 0) {
             LLVMTypeRef param_types[] = { LLVMInt32Type() };
             printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
+            assert(root->prog.ext1->ext.name != NULL);
             printFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, printType);
         } else if(strcmp(root->prog.ext1->ext.name, "Read") == 0) {
             readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
+            assert(root->prog.ext1->ext.name != NULL);
             readFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, readType);
         }
     }
 
+    assert(root->prog.ext2 != NULL);
     if(root->prog.ext2 != NULL) {
         if(strcmp(root->prog.ext2->ext.name, "Print") == 0) {
             LLVMTypeRef param_types[] = { LLVMInt32Type() };
             printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
+            assert(root->prog.ext2->ext.name != NULL);
             printFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, printType);
         } else if(strcmp(root->prog.ext2->ext.name, "Read") == 0) {
             readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
+            assert(root->prog.ext2->ext.name != NULL);
             readFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, readType);
         }
     }
 
     // create function with module
+    assert(root->prog.func != NULL);
     if(root->prog.func->func.param != NULL) {
         LLVMTypeRef param_types[] = { LLVMInt32Type() };
         LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 1, 0);
+        assert(root->prog.func->func.name);
         func = LLVMAddFunction(mod, root->prog.func->func.name, ret_type);
     } else {
         LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
+        assert(root->prog.func->func.name);
         func = LLVMAddFunction(mod, root->prog.func->func.name, ret_type);
     }
 
@@ -93,12 +106,15 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
 
     // allocate
     if(root->prog.func->func.param != NULL) {
+        assert(root->prog.func->func.param->var.name != NULL);
         LLVMValueRef param = LLVMBuildAlloca(builder, LLVMInt32Type(), root->prog.func->func.param->var.name);
         LLVMSetAlignment(param, 4);
         vars[root->prog.func->func.param->var.name] = param;
+        assert(root->prog.func->func.body != NULL);
         getDeclarations(root->prog.func->func.body); // add all other allocations of variables in the program
         LLVMBuildStore(builder, LLVMGetParam(func, 0), param);
     } else {
+        assert(root->prog.func->func.body != NULL);
         getDeclarations(root->prog.func->func.body); // add all other allocations of variables in the program
     }
 
@@ -113,7 +129,9 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
  * builds the basic blocks accordingly
  */
 void traverseAST(astNode* node) {
+    assert(node != NULL);
 
+    assert(node->type == ast_stmt);
     switch(node->stmt.type) {
 
         case(ast_decl): {
@@ -122,7 +140,9 @@ void traverseAST(astNode* node) {
         }
 
         case(ast_call): {
+            assert(node->stmt.call.name != NULL);
             if(strcmp(node->stmt.call.name, "Print") == 0) {
+                assert(node->stmt.call.param != NULL);
                 LLVMValueRef args[] = { getLLVMExpression(node->stmt.call.param) };
                 LLVMBuildCall2(builder, printType, printFunc, args, 1, "");
             }
@@ -136,6 +156,7 @@ void traverseAST(astNode* node) {
 
             // assign proper return value and branch to return block
             LLVMPositionBuilderAtEnd(builder, assignRetVal_BB);
+            assert(node->stmt.ret.expr != NULL);
             LLVMValueRef expr = getLLVMExpression(node->stmt.ret.expr);
             LLVMBuildStore(builder, expr, vars["return"]);
             LLVMBuildBr(builder, returnBlock);
@@ -154,10 +175,12 @@ void traverseAST(astNode* node) {
 
             // create condition and looping structure
             LLVMPositionBuilderAtEnd(builder, condition_BB);
+            assert(node->stmt.whilen.cond != NULL);
             LLVMValueRef condition = getLLVMCondition(node->stmt.whilen.cond);
             LLVMBuildCondBr(builder, condition, body_BB, final);
 
             LLVMPositionBuilderAtEnd(builder, body_BB);
+            assert(node->stmt.whilen.body != NULL);
             traverseAST(node->stmt.whilen.body);
             LLVMBuildBr(builder, condition_BB);
 
@@ -175,11 +198,13 @@ void traverseAST(astNode* node) {
                 LLVMBasicBlockRef final = LLVMAppendBasicBlock(func, "");
 
                 // create condition
+                assert(node->stmt.ifn.cond != NULL);
                 LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, else_BB);
 
                 // traverse through bodies of if, else, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
+                assert(node->stmt.ifn.if_body != NULL);
                 traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
 
@@ -196,11 +221,13 @@ void traverseAST(astNode* node) {
                 LLVMBasicBlockRef final = LLVMAppendBasicBlock(func, "");
 
                 // create condition
+                assert(node->stmt.ifn.cond != NULL);
                 LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, final);
 
                 // traverse through bodies of if, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
+                assert(node->stmt.ifn.if_body != NULL);
                 traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
 
@@ -211,16 +238,21 @@ void traverseAST(astNode* node) {
             
         case(ast_asgn): {
             // create an instruction for the given assignment statement
+            assert(node->stmt.asgn.rhs != NULL);
             LLVMValueRef rhs = getLLVMExpression(node->stmt.asgn.rhs);
+            assert(node->stmt.asgn.lhs != NULL);
+            assert(node->stmt.asgn.lhs->var.name != NULL);
             LLVMBuildStore(builder, rhs, vars[string(node->stmt.asgn.lhs->var.name)]);
             break;
         }
 
         case(ast_block): {
             // loop through all statements and handle accordingly
+            assert(node->stmt.block.stmt_list != NULL);
             vector<astNode*>* slist = node->stmt.block.stmt_list;
             vector<astNode*>::iterator it = slist->begin();
             while(it != slist->end()) {
+                assert(*it != NULL);
                 traverseAST(*it);
                 it++;
             }
@@ -235,11 +267,13 @@ void traverseAST(astNode* node) {
  * so they can be allocated at the beginning of the function
  */
 void getDeclarations(astNode* node) {
+    assert(node != NULL);
 
     // loop through statements and handle them
     vector<astNode*>* slist = node->stmt.block.stmt_list;
     vector<astNode*>::iterator it = slist->begin();
     while(it != slist->end()) {
+        assert(*it != NULL);
         astNode* node = (astNode*) *it;
         handleStatements_decs(node);        
         it++;
@@ -251,8 +285,10 @@ void getDeclarations(astNode* node) {
  * creating value refs for them when declarations are reached
  */
 void handleStatements_decs(astNode* node) {
+    assert(node != NULL);
     
     // traverse through all locations there could be declarations
+    assert(node->type == ast_stmt);
     switch(node->stmt.type) {
             
             case(ast_block): {
@@ -262,6 +298,7 @@ void handleStatements_decs(astNode* node) {
 
             case(ast_if): {
                 // handle if and else bodies
+                assert(node->stmt.ifn.if_body != NULL);
                 handleStatements_decs(node->stmt.ifn.if_body);
                 if(node->stmt.ifn.else_body != NULL) {
                     handleStatements_decs(node->stmt.ifn.else_body);
@@ -270,17 +307,20 @@ void handleStatements_decs(astNode* node) {
             }
 
             case(ast_while): {
+                assert(node->stmt.whilen.body != NULL);
                 handleStatements_decs(node->stmt.whilen.body);
                 break;
             }
 
             case(ast_decl): {
                 // if the variable has already been allocated, do not reallocate
+                assert(node->stmt.decl.name != NULL);
                 if(vars.count(node->stmt.decl.name) == 1) {
                     break;
                 }
 
                 // allocate the variable and add it to the map of variables
+                assert(node->stmt.decl.name != NULL);
                 LLVMValueRef var = LLVMBuildAlloca(builder, LLVMInt32Type(), node->stmt.decl.name);
                 LLVMSetAlignment(var, 4);
                 vars[string(node->stmt.decl.name)] = var;
@@ -296,11 +336,14 @@ void handleStatements_decs(astNode* node) {
  * to said condition
  */
 LLVMValueRef getLLVMCondition(astNode* node) {
+    assert(node != NULL);
     
     LLVMValueRef cond;
 
     // build the left and right hand side
+    assert(node->rexpr.lhs != NULL);
     LLVMValueRef lhs = getTerm(node->rexpr.lhs, false);
+    assert(node->rexpr.rhs != NULL);
     LLVMValueRef rhs = getTerm(node->rexpr.rhs, false);
 
     // set the appropriate condition by operation
@@ -344,6 +387,7 @@ LLVMValueRef getLLVMCondition(astNode* node) {
  * to said expression
  */
 LLVMValueRef getLLVMExpression(astNode* node) {
+    assert(node != NULL);
 
     LLVMValueRef expr;
 
@@ -363,7 +407,9 @@ LLVMValueRef getLLVMExpression(astNode* node) {
         case(ast_bexpr): {
             
             // build the left and right hand side
+            assert(node->bexpr.lhs != NULL);
             LLVMValueRef lhs = getTerm(node->bexpr.lhs, false);
+            assert(node->bexpr.rhs != NULL);
             LLVMValueRef rhs = getTerm(node->bexpr.rhs, false);
 
             // build the arithmetic operator
@@ -396,6 +442,7 @@ LLVMValueRef getLLVMExpression(astNode* node) {
 
         case(ast_uexpr): {
             // if the uexpr is operating on a variable, multiply the variable by 
+            assert(node->uexpr.expr != NULL);
             if(node->uexpr.expr->type == ast_var) {
                 LLVMValueRef term = getTerm(node->uexpr.expr, false);
                 LLVMValueRef neg1 = LLVMConstInt(LLVMInt32Type(), -1, false);
@@ -407,7 +454,9 @@ LLVMValueRef getLLVMExpression(astNode* node) {
             break;
         }
 
-        case(ast_stmt): { // TODO FIX THIS DEFAULT FOR EXTERN CALL
+        case(ast_stmt): { // if statement, must be an extern call
+            assert(node->stmt.type == ast_call);
+            assert(node->stmt.call.name != NULL);
             if(strcmp(node->stmt.call.name, "Read") == 0) {
                 LLVMValueRef args[] = {};
                 expr = LLVMBuildCall2(builder, readType, readFunc, args, 0, "");
@@ -431,9 +480,13 @@ LLVMValueRef getLLVMExpression(astNode* node) {
  * will be either a constint or retrieving a variable using a load
  */
 LLVMValueRef getTerm(astNode* node, bool negative) {
+    assert(node != NULL);
+
     if(node->type == ast_var) { // variable - load
+        assert(node->var.name != NULL);
         return LLVMBuildLoad2(builder, LLVMInt32Type(), vars[node->var.name], "");
     } else { // constant
+        assert(node->type == ast_cnst);
         if(negative) {
             return LLVMConstInt(LLVMInt32Type(), -1 * node->cnst.value, false);
         } else {

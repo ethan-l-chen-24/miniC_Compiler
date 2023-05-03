@@ -2,10 +2,12 @@
  * Library of semantic analysis functions
 */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<assert.h>
-#include<string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+#define NDEBUG
+#include <cassert>
 #include "semantic_analysis.h"
 using namespace std;
 
@@ -34,6 +36,7 @@ set<string> activeSymbols; // for optimization
  * traverses nodes and handles them according to type 
 */
 bool semanticAnalysis(astNode* node) {  
+    assert(node != NULL);
 
     bool result = true;
     // react based on node types
@@ -41,8 +44,11 @@ bool semanticAnalysis(astNode* node) {
 
         // traverse nodes
         case(ast_prog):
+            assert(node->prog.ext1 != NULL);
             result &= semanticAnalysis(node->prog.ext1); // unnecessary
+            assert(node->prog.ext2 != NULL);
             result &= semanticAnalysis(node->prog.ext2); // unnecessary
+            assert(node->prog.func != NULL);
             result &= semanticAnalysis(node->prog.func);
             break;
 
@@ -57,6 +63,7 @@ bool semanticAnalysis(astNode* node) {
 
         // check if the variable is on the symbol table, if not print an error
         case(ast_var):
+            assert(node->var.name != NULL);
             if(!onSymbolTable(node->var.name)) {
                 fprintf(stdout, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
                 result = false;
@@ -69,18 +76,23 @@ bool semanticAnalysis(astNode* node) {
 
         // traverse nodes
         case(ast_rexpr):
+            assert(node->rexpr.lhs != NULL);
             result &= semanticAnalysis(node->rexpr.lhs);
+            assert(node->rexpr.rhs != NULL);
             result &= semanticAnalysis(node->rexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_bexpr):
+            assert(node->bexpr.lhs != NULL);
             result &= semanticAnalysis(node->bexpr.lhs);
+            assert(node->bexpr.rhs != NULL);
             result &= semanticAnalysis(node->bexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_uexpr):
+            assert(node->uexpr.expr != NULL);
             result &= semanticAnalysis(node->uexpr.expr);
             break;
 
@@ -90,9 +102,11 @@ bool semanticAnalysis(astNode* node) {
             vector<char*>* current_symbols = new vector<char*>();
             if(node->func.param != NULL) {
                 stack.push_front(current_symbols);
+                assert(node->func.param->var.name != NULL);
                 current_symbols->push_back(node->func.param->var.name);
             }
 
+            assert(node->func.body != NULL);
             result &= semanticAnalysis(node->func.body); // traverse into body of function
 
             // free the front symbol vector
@@ -107,6 +121,7 @@ bool semanticAnalysis(astNode* node) {
 
 /* handles all of the possible statement types */
 bool handleStatements(astNode* node) {
+    assert(node != NULL);
    
     bool result = true;
     // react based on statement types
@@ -114,6 +129,7 @@ bool handleStatements(astNode* node) {
 
         // if a declaration, add var to list in top of stack
         case(ast_decl):
+            assert(node->stmt.decl.name != NULL);
             stack.front()->push_back(node->stmt.decl.name);
             break;
 
@@ -126,18 +142,23 @@ bool handleStatements(astNode* node) {
 
         // traverse nodes
         case(ast_ret):
+            assert(node->stmt.ret.expr != NULL);
             result &= semanticAnalysis(node->stmt.ret.expr);
             break;
 
         // traverse nodes
         case(ast_while):
+            assert(node->stmt.whilen.cond != NULL);
             result &= semanticAnalysis(node->stmt.whilen.cond);
+            assert(node->stmt.whilen.body != NULL);
             result &= semanticAnalysis(node->stmt.whilen.body);
             break;
 
         // traverse nodes
         case(ast_if):
+            assert(node->stmt.ifn.cond != NULL);
             result &= semanticAnalysis(node->stmt.ifn.cond);
+            assert(node->stmt.ifn.if_body != NULL);
             result &= semanticAnalysis(node->stmt.ifn.if_body);
             if(node->stmt.ifn.else_body != NULL) {
                 result &= semanticAnalysis(node->stmt.ifn.else_body);
@@ -146,7 +167,9 @@ bool handleStatements(astNode* node) {
 
         // traverse nodes
         case(ast_asgn):
+            assert(node->stmt.asgn.lhs != NULL);
             result &= semanticAnalysis(node->stmt.asgn.lhs);
+            assert(node->stmt.asgn.rhs != NULL);
             result &= semanticAnalysis(node->stmt.asgn.rhs);
             break;
 
@@ -176,6 +199,7 @@ bool handleStatements(astNode* node) {
  * that is, it checks if the var is on any of the vectors in our stack 
  */
 bool onSymbolTable(char* var) { 
+    assert(var != NULL);
 
     // iterate through all of the tables on the stack
     deque<vector<char*>*>::iterator st_it = stack.begin();
@@ -184,6 +208,7 @@ bool onSymbolTable(char* var) {
         vector<char*>* symbols = *st_it;
         vector<char*>::iterator vec_it = symbols->begin();
         while(vec_it != symbols->end()) {
+            assert(*vec_it != NULL);
             if(strcmp(*vec_it, var) == 0) { // if equal return true
                 return true;
             }
@@ -205,6 +230,7 @@ bool onSymbolTable(char* var) {
  * additionally throws errors in re-declarations 
  */
 bool semanticAnalysis_opt(astNode* node) {  
+    assert(node != NULL);
 
     bool result = true;
     // react based on node types
@@ -212,8 +238,11 @@ bool semanticAnalysis_opt(astNode* node) {
 
         // traverse nodes
         case(ast_prog):
+            assert(node->prog.ext1 != NULL);
             result &= semanticAnalysis_opt(node->prog.ext1); // unnecessary
+            assert(node->prog.ext2 != NULL);
             result &= semanticAnalysis_opt(node->prog.ext2); // unnecessary
+            assert(node->prog.func != NULL);
             result &= semanticAnalysis_opt(node->prog.func);
             break;
 
@@ -228,6 +257,7 @@ bool semanticAnalysis_opt(astNode* node) {
 
         // check if the variable is on the symbol table, if not print an error
         case(ast_var):
+            assert(node->var.name != NULL);
             if(!onSymbolTable_opt(node->var.name)) {
                 fprintf(stdout, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
                 result = false;
@@ -240,18 +270,23 @@ bool semanticAnalysis_opt(astNode* node) {
 
         // traverse nodes
         case(ast_rexpr):
+            assert(node->rexpr.lhs != NULL);
             result &= semanticAnalysis_opt(node->rexpr.lhs);
+            assert(node->rexpr.rhs != NULL);
             result &= semanticAnalysis_opt(node->rexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_bexpr):
+            assert(node->bexpr.lhs != NULL);
             result &= semanticAnalysis_opt(node->bexpr.lhs);
+            assert(node->bexpr.rhs != NULL);
             result &= semanticAnalysis_opt(node->bexpr.rhs);
             break;
 
         // traverse nodes
         case(ast_uexpr):
+            assert(node->uexpr.expr != NULL);
             result &= semanticAnalysis_opt(node->uexpr.expr);
             break;
 
@@ -261,10 +296,12 @@ bool semanticAnalysis_opt(astNode* node) {
             vector<char*>* current_symbols = new vector<char*>();
             if(node->func.param != NULL) {
                 stack.push_front(current_symbols);
+                assert(node->func.param->var.name != NULL);
                 current_symbols->push_back(node->func.param->var.name);
                 activeSymbols.insert(string(node->func.param->var.name));
             }
 
+            assert(node->func.body != NULL);
             result &= semanticAnalysis_opt(node->func.body); // traverse into body of function
 
             // free the front symbol vector
@@ -282,6 +319,7 @@ bool semanticAnalysis_opt(astNode* node) {
  * optimized using a set for faster runtime 
  */
 bool handleStatements_opt(astNode* node) {
+    assert(node != NULL);
    
     bool result = true;
     // react based on statement types
@@ -290,6 +328,7 @@ bool handleStatements_opt(astNode* node) {
         // if a declaration, add var to list in top of stack
         case(ast_decl):
             // error if already exists - duplicate declaration
+            assert(node->stmt.decl.name != NULL);
             if(onFrontSymbolTable_opt(node->stmt.decl.name)) {
                 fprintf(stdout, "Symbol error: var [%s] has already been declared\n\n", node->stmt.decl.name);
                 result = false;
@@ -308,18 +347,23 @@ bool handleStatements_opt(astNode* node) {
 
         // traverse nodes
         case(ast_ret):
+            assert(node->stmt.ret.expr != NULL);
             result &= semanticAnalysis_opt(node->stmt.ret.expr);
             break;
 
         // traverse nodes
         case(ast_while):
+            assert(node->stmt.whilen.cond != NULL);
             result &= semanticAnalysis_opt(node->stmt.whilen.cond);
+            assert(node->stmt.whilen.body != NULL);
             result &= semanticAnalysis_opt(node->stmt.whilen.body);
             break;
 
         // traverse nodes
         case(ast_if):
+            assert(node->stmt.ifn.cond != NULL);
             result &= semanticAnalysis_opt(node->stmt.ifn.cond);
+            assert(node->stmt.ifn.if_body != NULL);
             result &= semanticAnalysis_opt(node->stmt.ifn.if_body);
             if(node->stmt.ifn.else_body != NULL) {
                 result &= semanticAnalysis_opt(node->stmt.ifn.else_body);
@@ -328,7 +372,9 @@ bool handleStatements_opt(astNode* node) {
 
         // traverse nodes
         case(ast_asgn):
+            assert(node->stmt.asgn.lhs != NULL);
             result &= semanticAnalysis_opt(node->stmt.asgn.lhs);
+            assert(node->stmt.asgn.rhs != NULL);
             result &= semanticAnalysis_opt(node->stmt.asgn.rhs);
             break;
 
@@ -340,6 +386,7 @@ bool handleStatements_opt(astNode* node) {
             vector<astNode*>* slist = node->stmt.block.stmt_list;
             vector<astNode*>::iterator it = slist->begin();
             while(it != slist->end()) { // iterate through all statements and traverse
+                assert(*it != NULL);
                 result &= semanticAnalysis_opt(*it);
                 it++;
             }
@@ -365,10 +412,13 @@ bool onSymbolTable_opt(string var) {
 
 /* checks if a variable is on the top symbol table vector */
 bool onFrontSymbolTable_opt(char* var) { 
+    assert(var != NULL);
+
     // loop through all symbols on top vector and check if any are equal to the var
     vector<char*>* symbols = stack.front();
     vector<char*>::iterator it = symbols->begin();
     while(it != symbols->end()) {
+        assert(*it != NULL);
         if(strcmp(*it, var) == 0) { // if equal return true
             return true;
         }
@@ -380,8 +430,10 @@ bool onFrontSymbolTable_opt(char* var) {
 
 /* deletes any symbols in the given symbol table from the symbol set */
 void deleteNonActiveSymbols_opt(vector<char*>* symbols) {
+    assert(symbols != NULL);
     vector<char*>::iterator it = symbols->begin();
     while(it != symbols->end() ) {
+        assert(*it != NULL);
         activeSymbols.erase(string(*it));
         it++;
     }
