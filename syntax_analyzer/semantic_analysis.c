@@ -31,7 +31,8 @@ set<string> activeSymbols; // for optimization
 /* ------- */
 
 /* main semantic analysis method - 
- * traverses nodes and handles them according to type */
+ * traverses nodes and handles them according to type 
+*/
 bool semanticAnalysis(astNode* node) {  
 
     bool result = true;
@@ -172,7 +173,8 @@ bool handleStatements(astNode* node) {
 }
 
 /* checks if a variable is on the symbol table 
- * that is, it checks if the var is on any of the vectors in our stack */
+ * that is, it checks if the var is on any of the vectors in our stack 
+ */
 bool onSymbolTable(char* var) { 
 
     // iterate through all of the tables on the stack
@@ -200,7 +202,8 @@ bool onSymbolTable(char* var) {
 /* main semantic analysis method - 
  * traverses nodes and handles them according to type 
  * optimized using a set for faster runtime;
- * additionally throws errors in re-declarations */
+ * additionally throws errors in re-declarations 
+ */
 bool semanticAnalysis_opt(astNode* node) {  
 
     bool result = true;
@@ -276,7 +279,8 @@ bool semanticAnalysis_opt(astNode* node) {
 }
 
 /* handles all of the possible statement types 
- * optimized using a set for faster runtime */
+ * optimized using a set for faster runtime 
+ */
 bool handleStatements_opt(astNode* node) {
    
     bool result = true;
@@ -353,7 +357,8 @@ bool handleStatements_opt(astNode* node) {
 
 /* checks if a variable is on the symbol table 
  * that is, it checks if the var is on any of the vectors in our stack 
- * optimized using a set */
+ * optimized using a set 
+ */
 bool onSymbolTable_opt(string var) { 
     return (activeSymbols.find(var) != activeSymbols.end());
 }

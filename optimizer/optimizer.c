@@ -74,7 +74,7 @@ int main(int argc, char** argv){
     LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
 
     // add optimizations here
-
+	optimizeLLVM(llvm_ir);
 
 	if(argc == 3) {
     	LLVMPrintModuleToFile(llvm_ir, argv[2], NULL);

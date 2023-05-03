@@ -7,7 +7,8 @@
 /* FUNCTIONS */
 /* --------- */
 
-bool commonSubexpressionElimination(LLVMModuleRef mod);
-bool deadCodeElimination(LLVMModuleRef mod);
-bool constantFolding(LLVMModuleRef mod);
-bool constantPropagation(LLVMModuleRef mod);
+void optimizeLLVM(LLVMModuleRef mod);
+bool commonSubexpressionElimination(LLVMBasicBlockRef bb);
+bool deadCodeElimination(LLVMBasicBlockRef bb);
+bool constantFolding(LLVMBasicBlockRef bb);
+bool constantPropagation(LLVMValueRef func);
