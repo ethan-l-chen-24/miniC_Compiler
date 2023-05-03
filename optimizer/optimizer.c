@@ -11,7 +11,7 @@
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
 #include "../syntax_analyzer/semantic_analysis.h"
-#include "llvm_gen.h"
+#include "llvm_optimizations.h"
 using namespace std;
 
 /* EXTERNS */
@@ -22,10 +22,42 @@ extern int yylex_destroy();
 extern FILE *yyin;
 extern char* yytext;
 
+/* FUNCTION PROTOTYPES */
+/* ------------------- */
+
+
 /* GLOBAL VARIABLES */
 /* ---------------- */
 
 astNode* root; // root of the AST
+
+/* METHODS */
+/* ------- */
+
+/* Taken from 
+ *
+*/
+LLVMModuleRef createLLVMModel(char * filename){
+	char *err = 0;
+
+	LLVMMemoryBufferRef ll_f = 0;
+	LLVMModuleRef m = 0;
+
+	LLVMCreateMemoryBufferWithContentsOfFile(filename, &ll_f, &err);
+
+	if (err != NULL) { 
+		prt(err);
+		return NULL;
+	}
+	
+	LLVMParseIRInContext(LLVMGetGlobalContext(), ll_f, &m, &err);
+
+	if (err != NULL) {
+		prt(err);
+	}
+
+	return m;
+}
 
 /* MAIN */
 /* ---- */
@@ -40,6 +72,9 @@ int main(int argc, char** argv){
 	yyparse();
 
     LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
+
+    // add optimizations here
+
 
 	if(argc == 3) {
     	LLVMPrintModuleToFile(llvm_ir, argv[2], NULL);
