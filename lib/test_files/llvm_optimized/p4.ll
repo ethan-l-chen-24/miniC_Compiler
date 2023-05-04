@@ -20,15 +20,14 @@ define i32 @func(i32 %0) {
   %5 = load i32, ptr %a, align 4
   %6 = load i32, ptr %i, align 4
   %7 = icmp slt i32 %5, %6
-  br i1 %7, label %8, label %12
+  br i1 %7, label %8, label %11
 
 8:                                                ; preds = %4
-  %9 = call i32 @Read()
-  store i32 %9, ptr %a, align 4
-  %10 = load i32, ptr %a, align 4
-  %11 = add i32 10, %10
-  store i32 %11, ptr %b, align 4
+  %9 = load i32, ptr %b, align 4
+  %10 = add i32 10, %9
+  store i32 %10, ptr %a, align 4
+  call void @Print(i32 %9)
   br label %4
 
-12:                                               ; preds = %4
+11:                                               ; preds = %4
 }

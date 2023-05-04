@@ -29,7 +29,6 @@ define i32 @func(i32 %0) {
   br i1 %11, label %23, label %25
 
 12:                                               ; preds = %27, %20
-  br label %13
 
 13:                                               ; preds = %17, %7
   %14 = load i32, ptr %b, align 4

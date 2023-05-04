@@ -4,13 +4,15 @@
 */
 
 #include<stdio.h>
-#include<stdlib.h>
-#include<assert.h>
-#include<string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+#include <string.h>
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
 #include "../syntax_analyzer/semantic_analysis.h"
+#include "../llvm_ir_builder/llvm_gen.h"
 #include "llvm_optimizations.h"
 using namespace std;
 
@@ -46,14 +48,14 @@ LLVMModuleRef createLLVMModel(char * filename){
 	LLVMCreateMemoryBufferWithContentsOfFile(filename, &ll_f, &err);
 
 	if (err != NULL) { 
-		prt(err);
+		printf("%s", err);
 		return NULL;
 	}
 	
 	LLVMParseIRInContext(LLVMGetGlobalContext(), ll_f, &m, &err);
 
 	if (err != NULL) {
-		prt(err);
+		printf("%s", err);
 	}
 
 	return m;
@@ -70,8 +72,9 @@ int main(int argc, char** argv){
 
     // generate the AST
 	yyparse();
+	LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
 
-    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
+    //LLVMModuleRef llvm_ir = createLLVMModel(argv[1]);
 
     // add optimizations here
 	optimizeLLVM(llvm_ir);
@@ -83,8 +86,8 @@ int main(int argc, char** argv){
     // close
 	if (yyin != stdin)
 		fclose(yyin);
-	yylex_destroy();
-    freeNode(root);
+	//yylex_destroy();
+    //freeNode(root);
 	
 	return 0;
 }

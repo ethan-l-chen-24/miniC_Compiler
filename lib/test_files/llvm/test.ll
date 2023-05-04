@@ -11,63 +11,82 @@ define i32 @func(i32 %0) {
   %b = alloca i32, align 4
   store i32 %0, ptr %i, align 4
   %2 = load i32, ptr %i, align 4
-  %3 = load i32, ptr %a, align 4
-  %4 = icmp slt i32 %2, %3
-  br i1 %4, label %6, label %8
-
-5:                                                ; preds = %27, %25
-  ret ptr %RETURN
-
-6:                                                ; preds = %1
-  %7 = load i32, ptr %a, align 4
-  store i32 %7, ptr %b, align 4
-  br label %11
-
-8:                                                ; preds = %1
+  %3 = add i32 4, %2
+  store i32 %3, ptr %a, align 4
+  %4 = load i32, ptr %a, align 4
+  %5 = add i32 %4, 3
+  store i32 %5, ptr %b, align 4
+  %6 = load i32, ptr %a, align 4
+  %7 = load i32, ptr %i, align 4
+  %8 = add i32 %6, %7
+  store i32 %8, ptr %b, align 4
   %9 = load i32, ptr %a, align 4
-  %10 = icmp sgt i32 %9, 3
-  br i1 %10, label %12, label %13
+  %10 = load i32, ptr %b, align 4
+  %11 = add i32 %9, %10
+  store i32 %11, ptr %i, align 4
+  %12 = load i32, ptr %a, align 4
+  %13 = add i32 %12, 3
+  store i32 %13, ptr %b, align 4
+  store i32 8, ptr %b, align 4
+  %14 = load i32, ptr %i, align 4
+  %15 = load i32, ptr %a, align 4
+  %16 = icmp slt i32 %14, %15
+  br i1 %16, label %19, label %21
 
-11:                                               ; preds = %15, %6
-  br label %16
+17:                                               ; preds = %40, %38
+  %18 = load i32, ptr %RETURN, align 4
+  ret i32 %18
 
-12:                                               ; preds = %8
-  store i32 3, ptr %b, align 4
-  br label %15
+19:                                               ; preds = %1
+  %20 = load i32, ptr %a, align 4
+  store i32 %20, ptr %b, align 4
+  br label %24
 
-13:                                               ; preds = %8
-  %14 = load i32, ptr %a, align 4
-  call void @Print(i32 %14)
-  br label %15
-
-15:                                               ; preds = %13, %12
-  br label %11
-
-16:                                               ; preds = %25, %11
-  %17 = load i32, ptr %a, align 4
-  %18 = load i32, ptr %i, align 4
-  %19 = icmp slt i32 %17, %18
-  br i1 %19, label %20, label %24
-
-20:                                               ; preds = %16
-  %21 = call i32 @Read()
-  store i32 %21, ptr %a, align 4
+21:                                               ; preds = %1
   %22 = load i32, ptr %a, align 4
-  %23 = sub i32 10, %22
-  store i32 %23, ptr %b, align 4
-  br label %25
+  %23 = icmp sgt i32 %22, 3
+  br i1 %23, label %25, label %26
 
-24:                                               ; preds = %16
-  br label %27
+24:                                               ; preds = %28, %19
+  br label %29
 
-25:                                               ; preds = %20
-  %26 = load i32, ptr %b, align 4
-  store i32 %26, ptr %RETURN, align 4
-  br label %5
-  br label %16
+25:                                               ; preds = %21
+  store i32 3, ptr %b, align 4
+  br label %28
 
-27:                                               ; preds = %24
-  %28 = call i32 @Read()
-  store i32 %28, ptr %RETURN, align 4
-  br label %5
+26:                                               ; preds = %21
+  %27 = load i32, ptr %a, align 4
+  call void @Print(i32 %27)
+  br label %28
+
+28:                                               ; preds = %26, %25
+  br label %24
+
+29:                                               ; preds = %38, %24
+  %30 = load i32, ptr %a, align 4
+  %31 = load i32, ptr %i, align 4
+  %32 = icmp slt i32 %30, %31
+  br i1 %32, label %33, label %37
+
+33:                                               ; preds = %29
+  %34 = call i32 @Read()
+  store i32 %34, ptr %a, align 4
+  %35 = load i32, ptr %a, align 4
+  %36 = sub i32 10, %35
+  store i32 %36, ptr %b, align 4
+  br label %38
+
+37:                                               ; preds = %29
+  br label %40
+
+38:                                               ; preds = %33
+  %39 = load i32, ptr %b, align 4
+  store i32 %39, ptr %RETURN, align 4
+  br label %17
+  br label %29
+
+40:                                               ; preds = %37
+  %41 = call i32 @Read()
+  store i32 %41, ptr %RETURN, align 4
+  br label %17
 }

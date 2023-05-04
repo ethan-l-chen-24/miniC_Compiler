@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "llvm_gen.h"
-#include <map>
+#include <unordered_map>
 #include <string>
 //#define NDEBUG
 #include <cassert>
@@ -27,7 +27,7 @@ LLVMValueRef getTerm(astNode* node, bool negative);
 /* GLOBAL VARIABLES */
 /* ---------------- */
 
-map<string, LLVMValueRef> vars; 
+unordered_map<string, LLVMValueRef> vars; 
 LLVMValueRef func;
 LLVMValueRef printFunc;
 LLVMValueRef readFunc;
@@ -101,7 +101,8 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
     // initialize return block with return statement for return value
     returnBlock = LLVMAppendBasicBlock(func, "");
     LLVMPositionBuilderAtEnd(builder, returnBlock);
-    LLVMBuildRet(builder, returnVal);
+    LLVMValueRef toReturn = LLVMBuildLoad2(builder, LLVMInt32Type(), returnVal, "");
+    LLVMBuildRet(builder, toReturn);
     LLVMPositionBuilderAtEnd(builder, first);
 
     // allocate
@@ -315,7 +316,7 @@ void handleStatements_decs(astNode* node) {
             case(ast_decl): {
                 // if the variable has already been allocated, do not reallocate
                 assert(node->stmt.decl.name != NULL);
-                if(vars.count(node->stmt.decl.name) == 1) {
+                if(vars.count(node->stmt.decl.name)) {
                     break;
                 }
 

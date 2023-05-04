@@ -8,6 +8,10 @@
 #include <string.h>
 #define NDEBUG
 #include <cassert>
+#include<vector>
+#include<deque>
+#include<unordered_set>
+#include<string>
 #include "semantic_analysis.h"
 using namespace std;
 
@@ -27,7 +31,7 @@ void deleteNonActiveSymbols_opt(vector<char*>* symbols);
 /* ----------- */
 
 deque<vector<char*>*> stack; // stores symbol tables
-set<string> activeSymbols; // for optimization
+unordered_set<string> activeSymbols; // for optimization
 
 /* METHODS */
 /* ------- */
