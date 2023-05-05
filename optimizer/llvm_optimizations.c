@@ -25,13 +25,12 @@ bool eraseInstructions(vector<LLVMValueRef>* instructions);
 void optimizeLLVM(LLVMModuleRef mod) {
     assert(mod != NULL);
 
-    runLocalOptimizations(mod, commonSubexpressionElimination);
-    runLocalOptimizations(mod, deadCodeElimination);
-
     // run constant folding and constant propagation until no more changes
     bool changed = true;
     while(changed) {
         changed = false;
+        changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
+        change |= runLocalOptimizations(mod, deadCodeElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
         changed |= runGlobalOptimizations(mod, constantPropagation);
     }
