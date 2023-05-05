@@ -52,9 +52,11 @@ int main(int argc, char** argv){
     printf("SUCCESS: Semantics Checked\n");
 
     // convert to LLVM IR
+    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
     printf("HERE");
 
     // Optimize the LLVM IR
+    optimizeLLVM(llvm_ir);
 
     // Convert to machine code
 

@@ -6,6 +6,7 @@
 #include <string.h>
 #include "llvm_optimizations.h"
 #include <unordered_map>
+#include <vector>
 #define NDEBUG
 #include <cassert>
 
@@ -30,7 +31,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
     while(changed) {
         changed = false;
         changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
-        change |= runLocalOptimizations(mod, deadCodeElimination);
+        changed |= runLocalOptimizations(mod, deadCodeElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
         changed |= runGlobalOptimizations(mod, constantPropagation);
     }
@@ -174,7 +175,10 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
         }
     }
 
-    return eraseInstructions(instructionsToErase);
+    bool changed = eraseInstructions(instructionsToErase);
+    delete(instructionsToErase);
+
+    return changed;
 }
 
 /* Finds instructions that have no use
@@ -206,7 +210,10 @@ bool deadCodeElimination(LLVMBasicBlockRef bb) {
 
     }
 
-    return eraseInstructions(instructionsToErase);
+    bool changed = eraseInstructions(instructionsToErase);
+    delete(instructionsToErase);
+
+    return changed;
 }
 
 /* Finds instructions with opcode +, -, * and all operands are constants
@@ -268,7 +275,10 @@ bool constantFolding(LLVMBasicBlockRef bb) {
 
     }
 
-    return eraseInstructions(instructionsToErase);
+    bool changed = eraseInstructions(instructionsToErase);
+    delete(instructionsToErase);
+
+    return changed;
 }
 
 /*
@@ -293,9 +303,6 @@ bool eraseInstructions(vector<LLVMValueRef>* instructions) {
             LLVMInstructionEraseFromParent(*it);
             it++;
         }
-
-        // delete the list
-        delete(instructions);
 
         return true;
     }

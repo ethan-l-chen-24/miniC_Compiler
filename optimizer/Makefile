@@ -5,7 +5,7 @@ folder = ../lib/test_files
 subfolder = files
 test_file = p5
 
-clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb
+clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb -gdwarf-4 -g
 syntax_files = ../syntax_analyzer/semantic_analysis.c ../syntax_analyzer/y.tab.c ../syntax_analyzer/lex.yy.c
 llvm_builder_files = ../llvm_ir_builder/llvm_gen.c
 
