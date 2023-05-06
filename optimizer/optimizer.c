@@ -86,8 +86,8 @@ int main(int argc, char** argv){
     // close
 	if (yyin != stdin)
 		fclose(yyin);
-	//yylex_destroy();
-    //freeNode(root);
+	yylex_destroy();
+    freeNode(root);
 	
 	return 0;
 }
