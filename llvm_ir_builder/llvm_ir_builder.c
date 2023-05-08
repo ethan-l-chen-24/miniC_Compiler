@@ -40,6 +40,7 @@ int main(int argc, char** argv){
 	yyparse();
 
     LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
+	optimizeLLVMBasicBlocks(llvm_ir);
 
 	if(argc == 3) {
     	LLVMPrintModuleToFile(llvm_ir, argv[2], NULL);

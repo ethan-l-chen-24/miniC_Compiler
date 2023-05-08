@@ -6,6 +6,8 @@
 #include <string.h>
 #include "llvm_gen.h"
 #include <unordered_map>
+#include <set>
+#include <deque>
 #include <string>
 //#define NDEBUG
 #include <cassert>
@@ -22,6 +24,12 @@ void handleStatements_decs(astNode* node);
 LLVMValueRef getLLVMCondition(astNode* node);
 LLVMValueRef getLLVMExpression(astNode* node);
 LLVMValueRef getTerm(astNode* node, bool negative);
+void addBranchToGraph(LLVMBasicBlockRef destination);
+
+void deadBlockElimination(LLVMValueRef function);
+void mergeLinearBlocks(LLVMValueRef function);
+void mergeBlocks(LLVMBasicBlockRef first, LLVMBasicBlockRef second, vector<LLVMBasicBlockRef>* blocksToDelete);
+void deleteBasicBlocks(vector<LLVMBasicBlockRef> blocks);
 
 
 /* GLOBAL VARIABLES */
@@ -35,8 +43,12 @@ LLVMTypeRef printType;
 LLVMTypeRef readType;
 LLVMBasicBlockRef returnBlock;
 LLVMBuilderRef builder;
+LLVMBasicBlockRef currentBlock;
 
-/* METHODS */
+unordered_map<LLVMBasicBlockRef, vector<LLVMBasicBlockRef>> bbOutGraph;
+unordered_map<LLVMBasicBlockRef, vector<LLVMBasicBlockRef>> bbInGraph;
+
+/* BUILD METHODS */
 /* ------- */
 
 /* main semantic analysis method - 
@@ -104,6 +116,7 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
     LLVMValueRef toReturn = LLVMBuildLoad2(builder, LLVMInt32Type(), returnVal, "");
     LLVMBuildRet(builder, toReturn);
     LLVMPositionBuilderAtEnd(builder, first);
+    currentBlock = first;
 
     // allocate
     if(root->prog.func->func.param != NULL) {
@@ -122,6 +135,8 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root) {
     // traverse the ast
     traverseAST(root->prog.func->func.body);
     LLVMDisposeBuilder(builder);
+
+    LLVMMoveBasicBlockAfter(returnBlock, currentBlock);
    
     return mod;
 }
@@ -154,13 +169,16 @@ void traverseAST(astNode* node) {
             // build a new basic block for the return
             LLVMBasicBlockRef assignRetVal_BB = LLVMAppendBasicBlock(func, "");
             LLVMBuildBr(builder, assignRetVal_BB); // branch to it
+            addBranchToGraph(assignRetVal_BB);
 
             // assign proper return value and branch to return block
             LLVMPositionBuilderAtEnd(builder, assignRetVal_BB);
+            currentBlock = assignRetVal_BB;
             assert(node->stmt.ret.expr != NULL);
             LLVMValueRef expr = getLLVMExpression(node->stmt.ret.expr);
             LLVMBuildStore(builder, expr, vars["return"]);
             LLVMBuildBr(builder, returnBlock);
+            addBranchToGraph(returnBlock);
 
             break;
         }
@@ -173,19 +191,26 @@ void traverseAST(astNode* node) {
 
             // build branch to condition
             LLVMBuildBr(builder, condition_BB);
+            addBranchToGraph(condition_BB);
 
             // create condition and looping structure
             LLVMPositionBuilderAtEnd(builder, condition_BB);
+            currentBlock = condition_BB;
             assert(node->stmt.whilen.cond != NULL);
             LLVMValueRef condition = getLLVMCondition(node->stmt.whilen.cond);
             LLVMBuildCondBr(builder, condition, body_BB, final);
+            addBranchToGraph(body_BB);
+            addBranchToGraph(final);
 
             LLVMPositionBuilderAtEnd(builder, body_BB);
+            currentBlock = body_BB;
             assert(node->stmt.whilen.body != NULL);
             traverseAST(node->stmt.whilen.body);
             LLVMBuildBr(builder, condition_BB);
+            addBranchToGraph(condition_BB);
 
             LLVMPositionBuilderAtEnd(builder, final);
+            currentBlock = final;
 
             break;
         }
@@ -202,18 +227,25 @@ void traverseAST(astNode* node) {
                 assert(node->stmt.ifn.cond != NULL);
                 LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, else_BB);
+                addBranchToGraph(if_BB);
+                addBranchToGraph(else_BB);
 
                 // traverse through bodies of if, else, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
+                currentBlock = if_BB;
                 assert(node->stmt.ifn.if_body != NULL);
                 traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
+                addBranchToGraph(final);
 
                 LLVMPositionBuilderAtEnd(builder, else_BB);
+                currentBlock = else_BB;
                 traverseAST(node->stmt.ifn.else_body);
                 LLVMBuildBr(builder, final);
+                addBranchToGraph(final);
 
                 LLVMPositionBuilderAtEnd(builder, final);
+                currentBlock = final;
 
             // if-else body
             } else {
@@ -225,14 +257,19 @@ void traverseAST(astNode* node) {
                 assert(node->stmt.ifn.cond != NULL);
                 LLVMValueRef condition = getLLVMCondition(node->stmt.ifn.cond);
                 LLVMBuildCondBr(builder, condition, if_BB, final);
+                addBranchToGraph(if_BB);
+                addBranchToGraph(final);
 
                 // traverse through bodies of if, and final block
                 LLVMPositionBuilderAtEnd(builder, if_BB);
+                currentBlock = if_BB;
                 assert(node->stmt.ifn.if_body != NULL);
                 traverseAST(node->stmt.ifn.if_body);
                 LLVMBuildBr(builder, final);
+                addBranchToGraph(final);
 
                 LLVMPositionBuilderAtEnd(builder, final);
+                currentBlock = final;
             }
             break;
         }
@@ -494,4 +531,208 @@ LLVMValueRef getTerm(astNode* node, bool negative) {
             return LLVMConstInt(LLVMInt32Type(), node->cnst.value, false);
         }
     }
+}
+
+/* Builds the BasicBlock graph given a destination */
+void addBranchToGraph(LLVMBasicBlockRef destination) {
+    // check if two terminators - skip
+    LLVMValueRef lastInstruction = LLVMGetLastInstruction(currentBlock);
+    LLVMValueRef penulInstruction = LLVMGetPreviousInstruction(lastInstruction);
+    LLVMOpcode penulInstructionOp = LLVMGetInstructionOpcode(penulInstruction);
+    if(penulInstructionOp == LLVMCall || penulInstructionOp == LLVMRet) {
+        return;
+    }
+
+    // add to the graph
+    if(bbOutGraph.count(currentBlock) == 0) {
+        vector<LLVMBasicBlockRef> successors;
+        bbOutGraph[currentBlock] = successors;
+    }
+
+    if(bbInGraph.count(destination) == 0) {
+        vector<LLVMBasicBlockRef> predecessors;
+        bbInGraph[destination] = predecessors;
+    }
+
+    bbOutGraph[currentBlock].push_back(destination);
+    bbInGraph[destination].push_back(currentBlock);
+}
+
+
+
+/* OPTIMIZATION FUNCTIONS */
+/* ---------------------- */
+
+/* optimizes the basic block from the generator */
+void optimizeLLVMBasicBlocks(LLVMModuleRef mod) {
+    
+    // loop through the functions and optimize
+    for(LLVMValueRef function =  LLVMGetFirstFunction(mod); 
+        function; 
+        function = LLVMGetNextFunction(function)) {
+
+        deadBlockElimination(function);
+        mergeLinearBlocks(function);
+        
+    }
+}
+
+/* runs through the blocks and finds the set of 'reachable' blocks
+ * deletes all blocks present in the function that are not 'reachable'
+*/
+void deadBlockElimination(LLVMValueRef function) {
+
+    vector<LLVMBasicBlockRef> blocksToDelete; // basic blocks to eventually delete
+    set<LLVMBasicBlockRef> visitedBlocks; // all 'reachable' blocks
+    deque<LLVMBasicBlockRef> queue; // queue for BFS
+
+    // initialize queue
+    if(!LLVMGetFirstBasicBlock(function)) return;
+    queue.push_back(LLVMGetFirstBasicBlock(function));
+
+    // bfs
+    while(queue.size() != 0) {
+        LLVMBasicBlockRef block = queue.back();
+        queue.pop_back();
+        visitedBlocks.insert(block);
+
+        if(bbOutGraph.count(block) == 0) continue;
+
+        // loop through successors
+        vector<LLVMBasicBlockRef> successors = bbOutGraph[block];
+        vector<LLVMBasicBlockRef>::iterator it = successors.begin();
+        while(it != successors.end()) {
+            LLVMBasicBlockRef successor = *it;
+            if(visitedBlocks.count(successor) == 0) {
+                queue.push_back(successor);
+            }
+
+            it++;
+        }
+    }
+
+    // build list of unvisited blocks
+    for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(function); 
+        bb; 
+        bb = LLVMGetNextBasicBlock(bb)) {
+        
+        if(visitedBlocks.count(bb) == 0) {
+            blocksToDelete.push_back(bb);
+        }
+
+    }
+
+    deleteBasicBlocks(blocksToDelete);
+}
+
+/* merges two blocks if they are both their unique successor and predecessor */
+void mergeLinearBlocks(LLVMValueRef function) {
+
+    vector<LLVMBasicBlockRef>* blocksToDelete = new vector<LLVMBasicBlockRef>();
+
+    // loop through all of the basic blocks
+    LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(function); 
+    while(bb) {
+        
+        // skip bbs without successors
+        if(bbOutGraph.count(bb) == 0) {
+            bb = LLVMGetNextBasicBlock(bb);
+            continue;
+        }
+
+        vector<LLVMBasicBlockRef> successors = bbOutGraph[bb];
+
+        // skip bbs with more than one successor
+        if(successors.size() != 1) {
+            bb = LLVMGetNextBasicBlock(bb);
+            continue;
+        }
+
+        LLVMBasicBlockRef successor = successors.front();
+        assert(bbInGraph.count(successor) != 0);
+
+        // skip bbs whose successor has more than one predecessor
+        if(bbInGraph[successor].size() != 1) {
+            bb = LLVMGetNextBasicBlock(bb);
+            continue;
+        }
+
+        // merge
+        mergeBlocks(bb, successor, blocksToDelete);
+
+        // update graph
+        bbOutGraph[bb].pop_back(); // TODO FIGURE THIS OUT
+        
+        vector<LLVMBasicBlockRef> nextSuccessors = bbOutGraph[successor];
+        vector<LLVMBasicBlockRef>::iterator it = nextSuccessors.begin();
+        while(it != nextSuccessors.end()) {
+           
+           /*
+            bbOutGraph[bb].push_back(*it);
+            vector<LLVMBasicBlockRef> predecessorOfSuccessor = bbInGraph[*it];
+            auto i = find(predecessorOfSuccessor.begin(), predecessorOfSuccessor.end(), successor);
+            assert(i != predecessorOfSuccessor.end());
+            predecessorOfSuccessor.erase(i);
+            it++; */
+        }
+
+        bbOutGraph.erase(successor);
+        bbInGraph.erase(successor);
+    }
+
+    // delete blocks
+    vector<LLVMBasicBlockRef>::iterator it = blocksToDelete->begin();
+    while(it != blocksToDelete->end()) {
+        LLVMDeleteBasicBlock(*it);
+        it++;
+    }
+
+}
+
+/* merges two blocks together */
+void mergeBlocks(LLVMBasicBlockRef first, LLVMBasicBlockRef second, vector<LLVMBasicBlockRef>* blocksToDelete) {
+
+    // delete all of the br instructions from the end of the first block
+    vector<LLVMValueRef> instructionsToDelete;
+    for(LLVMValueRef instruction = LLVMGetFirstInstruction(first);
+        instruction;
+        instruction = LLVMGetNextInstruction(instruction)) {
+
+        if(LLVMGetInstructionOpcode(instruction) == LLVMBr) {
+            instructionsToDelete.push_back(instruction);
+        }
+    }
+
+    vector<LLVMValueRef>::iterator it = instructionsToDelete.begin();
+    while(it != instructionsToDelete.end()) {
+        assert(*it != NULL);
+        LLVMInstructionEraseFromParent(*it);
+        it++;
+    }
+
+
+    // add all of the instructions of the second block to the end of the first
+    builder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(builder, first);
+    for(LLVMValueRef instruction = LLVMGetFirstInstruction(second);
+        instruction;
+        instruction = LLVMGetNextInstruction(instruction)) {
+        
+        LLVMInstructionRemoveFromParent(instruction);
+        LLVMInsertIntoBuilder(builder, instruction); // FIX FOR DOUBLE BRANCH INSTRUCTIONS
+    }
+
+    // delete the second block
+    blocksToDelete->push_back(second);
+}
+
+/* deletes a list of basic blocks from LLVM */
+void deleteBasicBlocks(vector<LLVMBasicBlockRef> blocks) {
+    // loop through and delete blocks
+    vector<LLVMBasicBlockRef>::iterator it = blocks.begin();
+    while(it != blocks.end()) {
+        LLVMDeleteBasicBlock(*it);
+        it++;
+    }
+
 }

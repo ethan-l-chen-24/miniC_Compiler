@@ -18,7 +18,7 @@ valgrind:
 	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out $(folder)/$(subfolder)/$(test_file).c
 
 debug:
-	gdb --args ./$(source).out $(folder)/$(subfolder)/$(test_file).c
+	gdb --args ./$(source).out $(folder)/$(subfolder)/$(test_file).c $(folder)/llvm/$(test_file).ll
 
 clean:
 	rm *.out *.o *.ll

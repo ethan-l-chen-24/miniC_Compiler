@@ -7,3 +7,4 @@
 /* --------- */
 
 LLVMModuleRef createLLVMModelFromAST(astNode* root);
+void optimizeLLVMBasicBlocks(LLVMModuleRef mod);

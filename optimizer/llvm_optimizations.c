@@ -7,15 +7,21 @@
 #include "llvm_optimizations.h"
 #include <unordered_map>
 #include <vector>
+#include <set>
 #define NDEBUG
 #include <cassert>
 
 using namespace std;
 
 /* FUNCTION PROTOTYPES */
+void getAllOperands(LLVMModuleRef mod);
 bool runLocalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMBasicBlockRef bb));
 bool runGlobalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMValueRef func));
 bool eraseInstructions(vector<LLVMValueRef>* instructions);
+
+/* GLOBAL VARIABLES */
+/* ---------------- */
+set<LLVMValueRef> allOperands;
 
 /* FUNCTIONS */
 /* --------- */
@@ -30,12 +36,42 @@ void optimizeLLVM(LLVMModuleRef mod) {
     bool changed = true;
     while(changed) {
         changed = false;
+        allOperands.clear();
+        getAllOperands(mod);
         changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, deadCodeElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
-        changed |= runGlobalOptimizations(mod, constantPropagation);
+        //changed |= runGlobalOptimizations(mod, constantPropagation);
     }
 
+}
+
+/* adds all instructions to the global set*/
+void getAllOperands(LLVMModuleRef mod) {
+    assert(mod != NULL);
+
+    // loop through all functions
+     for(LLVMValueRef function =  LLVMGetFirstFunction(mod); 
+        function; 
+        function = LLVMGetNextFunction(function)) {
+
+        // loop through all basic blocks
+        for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(function);
+            basicBlock;
+            basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+                
+            // loop through all instructions
+            for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+                instruction;
+                instruction = LLVMGetNextInstruction(instruction)) {
+
+                // loop through operands and add to set
+                for(int i = 0; i < LLVMGetNumOperands(instruction); i++) {
+                    allOperands.insert(LLVMGetOperand(instruction, i));
+                }
+            }
+        }
+    }
 }
 
 /* iterates through all of the basic blocks in each function
@@ -57,7 +93,7 @@ bool runLocalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMBasicBlockRef bb))
             basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
                 // run the passed optimization
                 changed |= (*opt)(basicBlock);
-            }
+        }
     }
 
     return changed;
@@ -83,6 +119,31 @@ bool runGlobalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMValueRef func)) {
 
     return changed;
 }
+
+/* erases all of the instructions in the list */
+bool eraseInstructions(vector<LLVMValueRef>* instructions) {
+
+    // return false if no instructions to delete
+    if(instructions->size() == 0) {
+        return false;
+    } else { 
+
+        // loop through the instructions and delete them
+        vector<LLVMValueRef>::iterator it = instructions->begin();
+        while(it != instructions->end()) {
+            assert(*it != NULL);
+            LLVMInstructionEraseFromParent(*it);
+            it++;
+        }
+
+        instructions->clear();
+
+        return true;
+    }
+}
+
+/* LOCAL OPTIMIZATION FUNCTIONS */
+/* ---------------------------- */
 
 /* Finds pairs of instructions with the same opcode, and operands
  * If there is no modifier (store when opcode is load) of the operands between these instructions
@@ -183,6 +244,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
 
 /* Finds instructions that have no use
  * these instructions will follow a return or branch
+ * or never be used in the instruction list
  */
 bool deadCodeElimination(LLVMBasicBlockRef bb) {
     assert(bb != NULL);
@@ -206,11 +268,41 @@ bool deadCodeElimination(LLVMBasicBlockRef bb) {
         // if we have a branch or return, enable flag to delete deadcode
         if(opcode == LLVMRet || opcode == LLVMBr) {
             terminatorReached = true;
-        }
+        } else {
 
+            if(opcode == LLVMCall || opcode == LLVMAlloca || opcode == LLVMStore) {
+                continue;
+            }
+
+            // if any other instruction, must be 
+            if(allOperands.count(instruction) == 0) {
+                instructionsToErase->push_back(instruction);
+            }
+        }
     }
 
     bool changed = eraseInstructions(instructionsToErase);
+
+    // continue to delete deadcode created by deleting deadcode until no more
+    if(changed) {
+        for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); 
+            instruction;
+            instruction = LLVMGetNextInstruction(instruction)) {
+
+            // retrieve the opCode
+            LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
+
+            if(opcode == LLVMRet || LLVMBr || opcode == LLVMCall || opcode == LLVMAlloca || opcode == LLVMStore) {
+                continue;
+            }
+
+            if(allOperands.count(instruction) == 0) {
+                instructionsToErase->push_back(instruction);
+            }
+        }
+        changed = eraseInstructions(instructionsToErase);
+    }
+
     delete(instructionsToErase);
 
     return changed;
@@ -281,29 +373,13 @@ bool constantFolding(LLVMBasicBlockRef bb) {
     return changed;
 }
 
+/* GLOBAL OPTIMIZATION INSTRUCTIONS */
+/* -------------------------------- */
+
 /*
  *
  */
 bool constantPropagation(LLVMValueRef func) {
     return false;
 
-}
-/* erases all of the instructions in the list */
-bool eraseInstructions(vector<LLVMValueRef>* instructions) {
-
-    // return false if no instructions to delete
-    if(instructions->size() == 0) {
-        return false;
-    } else { 
-
-        // loop through the instructions and delete them
-        vector<LLVMValueRef>::iterator it = instructions->begin();
-        while(it != instructions->end()) {
-            assert(*it != NULL);
-            LLVMInstructionEraseFromParent(*it);
-            it++;
-        }
-
-        return true;
-    }
 }

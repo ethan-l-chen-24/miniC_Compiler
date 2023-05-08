@@ -15,6 +15,10 @@ build: llvm_optimizations.c $(main).c
 test:
 	./$(source).out $(folder)/$(subfolder)/$(test_file).c $(folder)/llvm_optimized/$(test_file).ll
 
+hard_test:
+	clang++ $(clang_flags) -o tester.out llvm_optimizations.c optimizer_tests.c
+	./tester.out $(folder)/llvm_optimized/hard_test.ll
+
 valgrind:
 	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out $(folder)/$(subfolder)/$(test_file).c
 
