@@ -13,24 +13,24 @@ define i32 @func(i32 %0) {
   %2 = load i32, ptr %a, align 4
   %3 = load i32, ptr %i, align 4
   %4 = icmp slt i32 %2, %3
-  br i1 %4, label %7, label %8
+  br i1 %4, label %5, label %6
 
-5:                                                ; No predecessors!
-  %6 = load i32, ptr %RETURN, align 4
-  ret i32 %6
-
-7:                                                ; preds = %1
+5:                                                ; preds = %1
   br label %13
 
-8:                                                ; preds = %1
-  %9 = load i32, ptr %b, align 4
-  %10 = load i32, ptr %i, align 4
-  %11 = icmp slt i32 %9, %10
-  br i1 %11, label %23, label %25
+6:                                                ; preds = %1
+  %7 = load i32, ptr %b, align 4
+  %8 = load i32, ptr %i, align 4
+  %9 = icmp slt i32 %7, %8
+  br i1 %9, label %23, label %25
 
-12:                                               ; preds = %27, %20
+10:                                               ; preds = %27, %20
 
-13:                                               ; preds = %17, %7
+11:                                               ; No predecessors!
+  %12 = load i32, ptr %RETURN, align 4
+  ret i32 %12
+
+13:                                               ; preds = %17, %5
   %14 = load i32, ptr %b, align 4
   %15 = load i32, ptr %i, align 4
   %16 = icmp slt i32 %14, %15
@@ -46,18 +46,18 @@ define i32 @func(i32 %0) {
   %21 = load i32, ptr %b, align 4
   %22 = add i32 10, %21
   store i32 %22, ptr %a, align 4
-  br label %12
+  br label %10
 
-23:                                               ; preds = %8
+23:                                               ; preds = %6
   %24 = load i32, ptr %a, align 4
   store i32 %24, ptr %b, align 4
   br label %27
 
-25:                                               ; preds = %8
+25:                                               ; preds = %6
   %26 = load i32, ptr %b, align 4
   store i32 %26, ptr %a, align 4
   br label %27
 
 27:                                               ; preds = %25, %23
-  br label %12
+  br label %10
 }

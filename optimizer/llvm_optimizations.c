@@ -41,7 +41,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
         changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, deadCodeElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
-        //changed |= runGlobalOptimizations(mod, constantPropagation);
+        changed |= runGlobalOptimizations(mod, constantPropagation);
     }
 
 }
@@ -51,7 +51,7 @@ void getAllOperands(LLVMModuleRef mod) {
     assert(mod != NULL);
 
     // loop through all functions
-     for(LLVMValueRef function =  LLVMGetFirstFunction(mod); 
+     for(LLVMValueRef function = LLVMGetFirstFunction(mod); 
         function; 
         function = LLVMGetNextFunction(function)) {
 

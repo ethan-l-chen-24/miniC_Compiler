@@ -39,7 +39,7 @@ astNode* root; // root of the AST
 /* Taken from 
  *
 */
-LLVMModuleRef createLLVMModel(char * filename){
+LLVMModuleRef createLLVMModel(char * filename) {
 	char *err = 0;
 
 	LLVMMemoryBufferRef ll_f = 0;
@@ -66,28 +66,39 @@ LLVMModuleRef createLLVMModel(char * filename){
 
 int main(int argc, char** argv){
 	
-	if (argc >= 2){
-		yyin = fopen(argv[1], "r");
+	if (argc >= 3){
+		yyin = fopen(argv[2], "r");
 	}
 
-    // generate the AST
-	yyparse();
-	LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
+	LLVMModuleRef llvm_ir;
+	if(strcmp("build", argv[1]) == 0) {
+		// generate the AST
+		yyparse();
+		llvm_ir = createLLVMModelFromAST(root);
 
-    //LLVMModuleRef llvm_ir = createLLVMModel(argv[1]);
+		// add optimizations here
+		optimizeLLVM(llvm_ir);
 
-    // add optimizations here
-	optimizeLLVM(llvm_ir);
+		if(argc == 4) {
+    		LLVMPrintModuleToFile(llvm_ir, argv[3], NULL);
+		}
+		yylex_destroy();
+		freeNode(root);
 
-	if(argc == 3) {
-    	LLVMPrintModuleToFile(llvm_ir, argv[2], NULL);
+	} else {
+		llvm_ir = createLLVMModel(argv[2]);
+
+		// add optimizations here
+		optimizeLLVM(llvm_ir);
+
+		if(argc == 4) {
+    		LLVMPrintModuleToFile(llvm_ir, argv[3], NULL);
+		}
 	}
 
-    // close
+	// close
 	if (yyin != stdin)
 		fclose(yyin);
-	yylex_destroy();
-    freeNode(root);
 	
 	return 0;
 }
