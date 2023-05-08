@@ -45,8 +45,8 @@ LLVMBasicBlockRef returnBlock;
 LLVMBuilderRef builder;
 LLVMBasicBlockRef currentBlock;
 
-unordered_map<LLVMBasicBlockRef, vector<LLVMBasicBlockRef>> bbOutGraph;
-unordered_map<LLVMBasicBlockRef, vector<LLVMBasicBlockRef>> bbInGraph;
+unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>> bbOutGraph;
+unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>> bbInGraph;
 
 /* BUILD METHODS */
 /* ------- */
@@ -545,17 +545,17 @@ void addBranchToGraph(LLVMBasicBlockRef destination) {
 
     // add to the graph
     if(bbOutGraph.count(currentBlock) == 0) {
-        vector<LLVMBasicBlockRef> successors;
+        set<LLVMBasicBlockRef> successors;
         bbOutGraph[currentBlock] = successors;
     }
 
     if(bbInGraph.count(destination) == 0) {
-        vector<LLVMBasicBlockRef> predecessors;
+        set<LLVMBasicBlockRef> predecessors;
         bbInGraph[destination] = predecessors;
     }
 
-    bbOutGraph[currentBlock].push_back(destination);
-    bbInGraph[destination].push_back(currentBlock);
+    bbOutGraph[currentBlock].insert(destination);
+    bbInGraph[destination].insert(currentBlock);
 }
 
 
@@ -573,6 +573,8 @@ void optimizeLLVMBasicBlocks(LLVMModuleRef mod) {
 
         deadBlockElimination(function);
         mergeLinearBlocks(function);
+
+       
         
     }
 }
@@ -599,8 +601,8 @@ void deadBlockElimination(LLVMValueRef function) {
         if(bbOutGraph.count(block) == 0) continue;
 
         // loop through successors
-        vector<LLVMBasicBlockRef> successors = bbOutGraph[block];
-        vector<LLVMBasicBlockRef>::iterator it = successors.begin();
+        set<LLVMBasicBlockRef> successors = bbOutGraph[block];
+        set<LLVMBasicBlockRef>::iterator it = successors.begin();
         while(it != successors.end()) {
             LLVMBasicBlockRef successor = *it;
             if(visitedBlocks.count(successor) == 0) {
@@ -640,7 +642,7 @@ void mergeLinearBlocks(LLVMValueRef function) {
             continue;
         }
 
-        vector<LLVMBasicBlockRef> successors = bbOutGraph[bb];
+        set<LLVMBasicBlockRef> successors = bbOutGraph[bb];
 
         // skip bbs with more than one successor
         if(successors.size() != 1) {
@@ -648,7 +650,7 @@ void mergeLinearBlocks(LLVMValueRef function) {
             continue;
         }
 
-        LLVMBasicBlockRef successor = successors.front();
+        LLVMBasicBlockRef successor = *(successors.begin());
         assert(bbInGraph.count(successor) != 0);
 
         // skip bbs whose successor has more than one predecessor
@@ -661,30 +663,19 @@ void mergeLinearBlocks(LLVMValueRef function) {
         mergeBlocks(bb, successor, blocksToDelete);
 
         // update graph
-        bbOutGraph[bb].pop_back(); // TODO FIGURE THIS OUT
+        bbOutGraph[bb].clear();
         
-        vector<LLVMBasicBlockRef> nextSuccessors = bbOutGraph[successor];
-        vector<LLVMBasicBlockRef>::iterator it = nextSuccessors.begin();
+        set<LLVMBasicBlockRef> nextSuccessors = bbOutGraph[successor];
+        set<LLVMBasicBlockRef>::iterator it = nextSuccessors.begin();
         while(it != nextSuccessors.end()) {
-           
-           /*
-            bbOutGraph[bb].push_back(*it);
-            vector<LLVMBasicBlockRef> predecessorOfSuccessor = bbInGraph[*it];
-            auto i = find(predecessorOfSuccessor.begin(), predecessorOfSuccessor.end(), successor);
-            assert(i != predecessorOfSuccessor.end());
-            predecessorOfSuccessor.erase(i);
-            it++; */
+            bbOutGraph[bb].insert(*it);
+            bbInGraph[*it].erase(successor);
+            bbInGraph[*it].insert(bb);
+            it++; 
         }
 
         bbOutGraph.erase(successor);
         bbInGraph.erase(successor);
-    }
-
-    // delete blocks
-    vector<LLVMBasicBlockRef>::iterator it = blocksToDelete->begin();
-    while(it != blocksToDelete->end()) {
-        LLVMDeleteBasicBlock(*it);
-        it++;
     }
 
 }
@@ -706,24 +697,23 @@ void mergeBlocks(LLVMBasicBlockRef first, LLVMBasicBlockRef second, vector<LLVMB
     vector<LLVMValueRef>::iterator it = instructionsToDelete.begin();
     while(it != instructionsToDelete.end()) {
         assert(*it != NULL);
-        LLVMInstructionEraseFromParent(*it);
+        LLVMInstructionRemoveFromParent(*it);
         it++;
     }
-
 
     // add all of the instructions of the second block to the end of the first
     builder = LLVMCreateBuilder();
     LLVMPositionBuilderAtEnd(builder, first);
-    for(LLVMValueRef instruction = LLVMGetFirstInstruction(second);
-        instruction;
-        instruction = LLVMGetNextInstruction(instruction)) {
-        
+    LLVMValueRef instruction = LLVMGetFirstInstruction(second);
+    while(instruction) {
+        LLVMValueRef nextInstruction = LLVMGetNextInstruction(instruction);
         LLVMInstructionRemoveFromParent(instruction);
-        LLVMInsertIntoBuilder(builder, instruction); // FIX FOR DOUBLE BRANCH INSTRUCTIONS
+        LLVMInsertIntoBuilder(builder, instruction);
+        instruction = nextInstruction;
     }
 
     // delete the second block
-    blocksToDelete->push_back(second);
+    LLVMDeleteBasicBlock(second);
 }
 
 /* deletes a list of basic blocks from LLVM */

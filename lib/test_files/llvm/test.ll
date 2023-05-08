@@ -9,4 +9,7 @@ define i32 @func(i32 %0) {
   %i = alloca i32, align 4
   store i32 %0, ptr %i, align 4
   %2 = load i32, ptr %i, align 4
+  store i32 %2, ptr %RETURN, align 4
+  %3 = load i32, ptr %RETURN, align 4
+  ret i32 %3
 }
