@@ -15,9 +15,11 @@ define dso_local i32 @func() #0 {
   store i32 20, i32* %2, align 4
   store i32 17670, i32* %6, align 4
   store i32 -17645, i32* %6, align 4
+  %7 = load i32, i32* %6, align 4
   store i32 20, i32* %6, align 4
-  store i32 <badref>, i32* %5, align 4
-  ret i32 <badref>
+  %8 = add nsw i32 %7, 200
+  store i32 %8, i32* %5, align 4
+  ret i32 %8
 }
 
 attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="non-leaf" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="generic" "target-features"="+neon,+outline-atomics,+v8a" }

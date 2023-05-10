@@ -14,14 +14,26 @@
 using namespace std;
 
 /* FUNCTION PROTOTYPES */
+/* ------------------- */
 void getAllOperands(LLVMModuleRef mod);
 bool runLocalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMBasicBlockRef bb));
 bool runGlobalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMValueRef func));
 bool eraseInstructions(vector<LLVMValueRef>* instructions);
 
+void generateStoreSet(LLVMValueRef func);
+void generateGen(LLVMValueRef func);
+void generateKill(LLVMValueRef func);
+void computeInOut(LLVMValueRef func);
+void performConstantProp(LLVMValueRef func);
+
 /* GLOBAL VARIABLES */
 /* ---------------- */
 set<LLVMValueRef> allOperands;
+unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> gen;
+unordered_map<LLVMBasicBlockRef, set<LLVMValueRf>> kill;
+unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> in;
+unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> out;
+unordered_map<LLVMValueRef, set<LLVMValueRef>> storeSet;
 
 /* FUNCTIONS */
 /* --------- */
@@ -38,8 +50,8 @@ void optimizeLLVM(LLVMModuleRef mod) {
         changed = false;
         allOperands.clear();
         getAllOperands(mod);
-        changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, deadCodeElimination);
+        changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
         changed |= runGlobalOptimizations(mod, constantPropagation);
     }
@@ -167,7 +179,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
 
         // handle alloca case (don't do anything)
-        if(opcode == LLVMAlloca) {
+        if(opcode == LLVMAlloca || opcode == LLVMCall) {
             continue;
         }
 
@@ -208,7 +220,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
             continue;
         }
 
-        // otherwise, loop through the instructions and look for common operators
+        // otherwise, loop through the instructions and look for common operands
         vector<LLVMValueRef> instructions = instructionsByOp[opcode];
         vector<LLVMValueRef>::iterator it = instructions.begin();
         while(it != instructions.end()) {
@@ -380,6 +392,162 @@ bool constantFolding(LLVMBasicBlockRef bb) {
  *
  */
 bool constantPropagation(LLVMValueRef func) {
-    return false;
+    generateStoreSet(func);
+    generateGen(func);
+    generateKill(func);
+    computeInOut(func);
+    return performConstantProp(func);
+}
 
+/* generates the 'storeSet' map, which maps addresses to 
+ * its store instructions across all basic blocks
+ */
+void generateStoreSet(LLVMValueRef func) {
+    storeSet.clear();
+
+    // loop through all basic blocks
+    for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
+        basicBlock;
+        basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+        // loop through all instructions
+        for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+            instruction;
+            LLVMGetNextInstruction(instruction)) {
+
+            // if we have a store instruction
+            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+                LLVMValueRef addr = LLVMGetOperand(instruction, 1);
+
+                // store the instruction in its address bucket
+                if(storeSet.count(addr) == 0) { // create bucket if doesn't exist
+                    set<LLVMValueRef> storeAddr;
+                    storeSet[addr] = storeAddr;
+                }
+                storeSet[addr].insert(instruction);
+            }
+
+        }
+    }
+}
+
+/* generates the 'gen' map, which maps each basic block
+ * to its set of 'gen' instructions, or store instructions
+ * that are not overwritten and escape the basic block
+ */
+void generateGen(LLVMValueRef func) {
+    gen.clear();
+
+    // loop through basic blocks
+    for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
+        basicBlock;
+        basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+        // create bucket for basic block
+        set<LLVMValueRef> genBucket;
+        gen[basicBlock] = genBucket;
+
+        // keeps track of the store instructions to each addr iterated over in the
+        // current basic block
+        unordered_map<LLVMValueRef, LLVMValueRef> activeStores;
+
+        // loop over basic blocks
+        for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+            instruction;
+            LLVMGetNextInstruction(instruction)) {
+            
+            // if we have a store instruction
+            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+                LLVMValueRef addr = LLVMGetOperand(instruction, 1);
+
+                // if we have already seen this instruction address in this block, erase it from gen
+                if(activeStores.count(addr) != 0) {
+                    assert(gen[basicBlock].count(activeStores[addr]) != 0);
+                    gen[basicBlock].erase(activeStores[addr]);
+                    activeStores[addr] = instruction;
+                }
+
+                // add current instruction to gen
+                gen[basicBlock].insert(instruction);
+            }
+        }
+    }
+}
+
+/* generates the 'kill' map, which maps each basic block
+ * to its set of 'kill' instructions, or store instructions
+ * killed by its own stores
+ */
+void generateKill(LLVMValueRef func) {
+    kill.clear();
+
+    // loop through all basic blocks
+    for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
+        basicBlock;
+        basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
+
+        // create bucket for basic block
+        set<LLVMValueRef> killBucket;
+        gen[basicBlock] = killBucket;
+
+        // loop through instructions
+        for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
+            instruction;
+            LLVMGetNextInstruction(instruction)) {
+
+            // if we have a store instruction
+            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+                LLVMValueRef addr = LLVMGetOperand(instruction, 1);
+                assert(storeSet.count(addr) != 0);
+                
+                // iterate through all instructions with same address and add to kill set
+                set<LLVMValueRef> addrSet = storeSet[addr];
+                set<LLVMValueRef>::iterator it = addrSet.begin();
+                while(it != addrSet.end()) {
+                    if(*it != instruction) { // ensure not the same instruction
+                        gen[basicBlock].insert(*it);
+                    }
+                    it++;
+                }
+
+            }
+
+        }
+    }
+}
+
+/* iteratively
+ *
+ */
+void computeInOut(LLVMValueRef func) {
+    in.clear();
+    out.clear();
+
+    // set out to in
+    for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
+        basicBlock;
+        basicBlock = LLVMGetNextBasicBlock(func)) {
+
+        out[basicBlock] = gen[basicBlock];
+    }
+
+    bool changed = true;
+    while(changed) {
+        changed = false;
+
+        for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
+            basicBlock;
+            basicBlock = LLVMGetNextBasicBlock(func)) {
+
+            in[basicBlock] = // TODO
+        }
+    }
+
+}
+
+/*
+ *
+ */
+void performConstantProp(LLVMValueRef func) {
+    
 }
