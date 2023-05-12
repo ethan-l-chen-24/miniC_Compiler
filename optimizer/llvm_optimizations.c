@@ -54,7 +54,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
 
     // run constant folding and constant propagation until no more changes
     bool changed = true;
-    //while(changed) {
+    while(changed) {
         changed = false;
         allOperands.clear();
         getAllOperands(mod);
@@ -62,7 +62,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
         changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
         changed |= runGlobalOptimizations(mod, constantPropagation);
-  //  }
+    }
 
 }
 
@@ -284,7 +284,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
  * these instructions will follow a return or branch
  * or never be used in the instruction list
  */
-bool deadCodeElimination(LLVMBasicBlockRef bb) { // TODO MAKE THIS BETTER
+bool deadCodeElimination(LLVMBasicBlockRef bb) {
     assert(bb != NULL);
 
     bool terminatorReached = false;

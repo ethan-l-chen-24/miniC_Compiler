@@ -1,7 +1,7 @@
 # Mini-C Compiler
 ## Ethan Chen, COSC 57, F004H1G
 
-This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and call `make` and then `make compile`. Provided in `lib/test_files` are two folders: `files` and `semantic_tests` which can be used as test files for the different parts of the compiler.
+This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and call `make` and then `make compile`. Provided in `lib/test_files` are two folders: `files` and `semantic_tests` which can be used as test files for the different parts of the compiler. The `helper` module contains a library of auxiliary helper functions generic to all sections of the project.
 
 The compiler is broken up into distinct sections: 
 
@@ -20,4 +20,9 @@ The Optimizer takes the LLVM IR and removes any unnecessary instructions, using 
 - deadcode elimination
 - constant folding
 - constant propagation
-To test the Optimizer, `cd` into `optimizer` and build using `make`. In the Makefile, , you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.ll` file will be outputted in the `lib/test_files/llvm_optimized` directory, allowing you to check the semantics of the LLVM IR against the original code.
+
+To test the Optimizer, `cd` into `optimizer` and build using `make`. In the Makefile, , you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.ll` file will be outputted in the `lib/test_files/llvm_optimized` directory, allowing you to check the semantics of the LLVM IR against the original code. For smaller custom test cases, run `make hard_test`.
+
+### 4. Assembly Generator
+
+Work in Progress
