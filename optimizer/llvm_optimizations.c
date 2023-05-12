@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "llvm_optimizations.h"
+#include "../helper/helper_functions.h"
 #include <unordered_map>
 #include <vector>
 #include <set>
@@ -15,6 +16,7 @@ using namespace std;
 
 /* FUNCTION PROTOTYPES */
 /* ------------------- */
+void getAllFunctionGraphs(LLVMModuleRef mod);
 void getAllOperands(LLVMModuleRef mod);
 bool runLocalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMBasicBlockRef bb));
 bool runGlobalOptimizations(LLVMModuleRef mod, bool (*opt)(LLVMValueRef func));
@@ -24,16 +26,20 @@ void generateStoreSet(LLVMValueRef func);
 void generateGen(LLVMValueRef func);
 void generateKill(LLVMValueRef func);
 void computeInOut(LLVMValueRef func);
-void performConstantProp(LLVMValueRef func);
+    void generateIn(LLVMBasicBlockRef bb);
+    void generateOut(LLVMBasicBlockRef bb);
+bool performConstantProp(LLVMValueRef func);
 
 /* GLOBAL VARIABLES */
 /* ---------------- */
 set<LLVMValueRef> allOperands;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> gen;
-unordered_map<LLVMBasicBlockRef, set<LLVMValueRf>> kill;
+unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> kill;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> in;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> out;
 unordered_map<LLVMValueRef, set<LLVMValueRef>> storeSet;
+
+unordered_map<LLVMValueRef, array<unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>>, 2>> graphs;
 
 /* FUNCTIONS */
 /* --------- */
@@ -43,6 +49,8 @@ unordered_map<LLVMValueRef, set<LLVMValueRef>> storeSet;
  */
 void optimizeLLVM(LLVMModuleRef mod) {
     assert(mod != NULL);
+
+    getAllFunctionGraphs(mod);
 
     // run constant folding and constant propagation until no more changes
     bool changed = true;
@@ -56,6 +64,17 @@ void optimizeLLVM(LLVMModuleRef mod) {
         changed |= runGlobalOptimizations(mod, constantPropagation);
     }
 
+}
+
+/* generate all of the graphs for each function and put it in a map */
+void getAllFunctionGraphs(LLVMModuleRef mod) {
+    // loop through all the functions
+    for(LLVMValueRef function = LLVMGetFirstFunction(mod);
+        function;
+        function = LLVMGetNextFunction(function)) {
+            // generate the graphs
+            graphs[function] = generateGraphs(function);
+    }
 }
 
 /* adds all instructions to the global set*/
@@ -248,6 +267,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
         }
     }
 
+    // delete all marked instructions
     bool changed = eraseInstructions(instructionsToErase);
     delete(instructionsToErase);
 
@@ -258,7 +278,7 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
  * these instructions will follow a return or branch
  * or never be used in the instruction list
  */
-bool deadCodeElimination(LLVMBasicBlockRef bb) {
+bool deadCodeElimination(LLVMBasicBlockRef bb) { // TODO MAKE THIS BETTER
     assert(bb != NULL);
 
     bool terminatorReached = false;
@@ -293,6 +313,7 @@ bool deadCodeElimination(LLVMBasicBlockRef bb) {
         }
     }
 
+    // delete all marked instructions
     bool changed = eraseInstructions(instructionsToErase);
 
     // continue to delete deadcode created by deleting deadcode until no more
@@ -379,6 +400,7 @@ bool constantFolding(LLVMBasicBlockRef bb) {
 
     }
 
+    // delete all marked instructions
     bool changed = eraseInstructions(instructionsToErase);
     delete(instructionsToErase);
 
@@ -388,8 +410,9 @@ bool constantFolding(LLVMBasicBlockRef bb) {
 /* GLOBAL OPTIMIZATION INSTRUCTIONS */
 /* -------------------------------- */
 
-/*
- *
+/* performs constant propagation, an optimization technique that 
+ * replaces all variables with the constant its value is defined as, assuming
+ * it is constant across all of its reaches
  */
 bool constantPropagation(LLVMValueRef func) {
     generateStoreSet(func);
@@ -413,10 +436,10 @@ void generateStoreSet(LLVMValueRef func) {
         // loop through all instructions
         for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
             instruction;
-            LLVMGetNextInstruction(instruction)) {
+            instruction = LLVMGetNextInstruction(instruction)) {
 
             // if we have a store instruction
-            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+            if(LLVMGetInstructionOpcode(instruction) == LLVMStore) {
                 LLVMValueRef addr = LLVMGetOperand(instruction, 1);
 
                 // store the instruction in its address bucket
@@ -451,13 +474,13 @@ void generateGen(LLVMValueRef func) {
         // current basic block
         unordered_map<LLVMValueRef, LLVMValueRef> activeStores;
 
-        // loop over basic blocks
+        // loop over instructions
         for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
             instruction;
-            LLVMGetNextInstruction(instruction)) {
+            instruction = LLVMGetNextInstruction(instruction)) {
             
             // if we have a store instruction
-            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+            if(LLVMGetInstructionOpcode(instruction) == LLVMStore) {
                 LLVMValueRef addr = LLVMGetOperand(instruction, 1);
 
                 // if we have already seen this instruction address in this block, erase it from gen
@@ -493,10 +516,10 @@ void generateKill(LLVMValueRef func) {
         // loop through instructions
         for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
             instruction;
-            LLVMGetNextInstruction(instruction)) {
+            instruction = LLVMGetNextInstruction(instruction)) {
 
             // if we have a store instruction
-            if(LLVMGetInstructionOperand(instruction) == LLVMStore) {
+            if(LLVMGetInstructionOpcode(instruction) == LLVMStore) {
                 LLVMValueRef addr = LLVMGetOperand(instruction, 1);
                 assert(storeSet.count(addr) != 0);
                 
@@ -509,16 +532,12 @@ void generateKill(LLVMValueRef func) {
                     }
                     it++;
                 }
-
             }
-
         }
     }
 }
 
-/* iteratively
- *
- */
+/* iteratively compute the 'in' and 'out' blocks for each basic block */
 void computeInOut(LLVMValueRef func) {
     in.clear();
     out.clear();
@@ -526,28 +545,193 @@ void computeInOut(LLVMValueRef func) {
     // set out to in
     for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
         basicBlock;
-        basicBlock = LLVMGetNextBasicBlock(func)) {
+        basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
 
         out[basicBlock] = gen[basicBlock];
     }
 
+    // iterate in and out as long as there are changes
     bool changed = true;
     while(changed) {
         changed = false;
 
+        // loop through all the basic blocks
         for(LLVMBasicBlockRef basicBlock = LLVMGetFirstBasicBlock(func);
             basicBlock;
-            basicBlock = LLVMGetNextBasicBlock(func)) {
+            basicBlock = LLVMGetNextBasicBlock(basicBlock)) {
 
-            in[basicBlock] = // TODO
+            // generate in and out
+            generateIn(basicBlock);
+            set<LLVMValueRef> oldout = out[basicBlock];
+            generateOut(basicBlock);
+
+            // if no changes, we are done
+            if(out[basicBlock] != oldout) {
+                changed = true;
+            }
+        }
+    }
+}
+
+/* generate 'in' for the particular basic block -
+ * in[bb] = union(out[p1], out[p2], ..., out[pn]) where pi is a predecessor
+ */
+void generateIn(LLVMBasicBlockRef bb) {
+    in[bb].clear();
+
+    // get the parent function, graph, and set of predecessors
+    LLVMValueRef function = LLVMGetBasicBlockParent(bb);
+    unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>> inGraph = graphs[function][1];
+    assert(inGraph.count(bb) != 0);
+    set<LLVMBasicBlockRef> predecessors = inGraph[bb];
+
+    // loop through the predecessors and all of their outs
+    set<LLVMBasicBlockRef>::iterator it = predecessors.begin();
+    while(it != predecessors.end()) {
+        assert(out.count(bb) != 0);
+
+        // loop through all of the outs of the predecessors
+        set<LLVMValueRef>::iterator outIt = out[bb].begin();
+        while(outIt != out[bb].end()) {
+            // insert instructions into in
+            in[bb].insert(*outIt);
+            outIt++;
+        }
+
+        it++;
+    }
+}
+
+/* generate 'out' for the particular basic block -
+ * out[bb] = gen[bb] U (in[bb] - kill[bb])
+ */
+void generateOut(LLVMBasicBlockRef bb) {
+    out[bb].clear();
+
+    // copy in
+    set<LLVMValueRef> inDiffKill = in[bb];
+
+    // calculate in[bb] - kill[bb]
+    set<LLVMValueRef>::iterator killIt = kill[bb].begin();
+    while(killIt != kill[bb].end()) {
+        // if in[bb] contains the item from kill, remove it
+        if(inDiffKill.count(*killIt) != 0) {
+            inDiffKill.erase(*killIt);
+        }
+
+        killIt++;
+    }
+
+    // add all of gen[bb] to out[bb]
+    set<LLVMValueRef>::iterator genIt = gen[bb].begin();
+    while(genIt != gen[bb].end()) {
+        out[bb].insert(*genIt);
+        genIt++;
+    }
+    
+    // add all of inDiffKill to out[bb]
+    set<LLVMValueRef>::iterator inDiffKillIt = inDiffKill.begin();
+    while(inDiffKillIt != inDiffKill.end()) {
+        out[bb].insert(*inDiffKillIt);
+        inDiffKillIt++;
+    }
+}
+
+/* edit the instruction set according to the in, out, kill, and gen sets */
+bool performConstantProp(LLVMValueRef func) {
+    
+    vector<LLVMValueRef>* instructionsToErase = new vector<LLVMValueRef>(); // instructions to erase
+    
+    // loop over all of the basic blocks
+    for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(func);
+        bb;
+        bb = LLVMGetNextBasicBlock(bb)) {
+
+        // set r as in[bb]
+        set<LLVMValueRef> r = in[bb];
+
+        // loop over all instructions
+        for(LLVMValueRef instruction = LLVMGetFirstInstruction(bb);
+            instruction;
+            instruction = LLVMGetNextInstruction(instruction)) {
+
+            LLVMOpcode op = LLVMGetInstructionOpcode(instruction);
+
+            // case 1: store
+            if(op == LLVMStore) { 
+
+                r.insert(instruction);
+                LLVMValueRef addr = LLVMGetOperand(instruction, 1); // store address
+
+                // loop over all instructions in r
+                set<LLVMValueRef>::iterator rIt = r.begin();
+                while(rIt != r.end()) {
+                    assert(LLVMGetInstructionOpcode(*rIt) == LLVMStore);
+                    if(*rIt == instruction) {
+                        continue;
+                    }
+
+                    // if it has the same store address, killed by instruction, remove from r
+                    if(addr == LLVMGetOperand(*rIt, 1)) {
+                        r.erase(*rIt);
+                    }
+
+                    rIt++;
+                }
+                
+            // case 2: load
+            } else if(op == LLVMLoad) { 
+                LLVMValueRef addr = LLVMGetOperand(instruction, 0); // load address
+
+                // loop over all instructions in r and keep track of constant int values
+                bool propagate = true; // if true at end of while loop, we can propagate the constant int value
+                bool firstConstFound = false; // checks for first constant to be set as constValue
+                LLVMValueRef constValue; // store the constant value
+
+                set<LLVMValueRef>::iterator rIt = r.begin();
+                while(rIt != r.end()) {
+                    assert(LLVMGetInstructionOpcode(*rIt) == LLVMStore);
+
+                    // ignore stores to other addresses
+                    if(addr != LLVMGetOperand(*rIt, 1)) {
+                        continue;
+                    }
+
+                    // get the value that is stored
+                    LLVMValueRef storedValue = LLVMGetOperand(*rIt, 0);
+
+                    // if it isn't a constant, we cannot propagate
+                    if(!LLVMIsAConstantInt(storedValue)) {
+                        propagate = false;
+                        break;
+                    }
+
+                    // assign first constant value
+                    if(!firstConstFound) {
+                        constValue = storedValue;
+                    }
+
+                    // if two different constant values are stored, we cannot propagate
+                    if(LLVMConstIntGetSExtValue(storedValue) != LLVMConstIntGetSExtValue(constValue)) {
+                        propagate = false;
+                        break;
+                    }
+
+                    rIt++;
+                }
+
+                // if we have a constant value to propagate
+                if(propagate && firstConstFound) {
+                    LLVMReplaceAllUsesWith(instruction, constValue);
+                    instructionsToErase->push_back(instruction);
+                }
+            }
         }
     }
 
-}
+    // delete marked load instructions
+    bool changed = eraseInstructions(instructionsToErase);
+    delete(instructionsToErase);
 
-/*
- *
- */
-void performConstantProp(LLVMValueRef func) {
-    
+    return changed;
 }
