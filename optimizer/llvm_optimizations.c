@@ -32,7 +32,7 @@ bool performConstantProp(LLVMValueRef func);
 
 /* GLOBAL VARIABLES */
 /* ---------------- */
-set<LLVMValueRef> allOperands;
+unordered_map<LLVMValueRef, int> allOperands;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> gen;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> kill;
 unordered_map<LLVMBasicBlockRef, set<LLVMValueRef>> in;
@@ -54,7 +54,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
 
     // run constant folding and constant propagation until no more changes
     bool changed = true;
-    while(changed) {
+    //while(changed) {
         changed = false;
         allOperands.clear();
         getAllOperands(mod);
@@ -62,7 +62,7 @@ void optimizeLLVM(LLVMModuleRef mod) {
         changed |= runLocalOptimizations(mod, commonSubexpressionElimination);
         changed |= runLocalOptimizations(mod, constantFolding);
         changed |= runGlobalOptimizations(mod, constantPropagation);
-    }
+  //  }
 
 }
 
@@ -98,7 +98,13 @@ void getAllOperands(LLVMModuleRef mod) {
 
                 // loop through operands and add to set
                 for(int i = 0; i < LLVMGetNumOperands(instruction); i++) {
-                    allOperands.insert(LLVMGetOperand(instruction, i));
+                    LLVMValueRef operand = LLVMGetOperand(instruction, i);
+
+                    // add to the count of that operand
+                    if(allOperands.count(operand) == 0) {
+                        allOperands[operand] = 0;
+                    }
+                    allOperands[operand]++;
                 }
             }
         }
@@ -284,7 +290,7 @@ bool deadCodeElimination(LLVMBasicBlockRef bb) { // TODO MAKE THIS BETTER
     bool terminatorReached = false;
     vector<LLVMValueRef>* instructionsToErase = new vector<LLVMValueRef>(); // instructions to erase
 
-    // walk instructions
+    // delete any instructions after terminators
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); 
         instruction;
   		instruction = LLVMGetNextInstruction(instruction)) {
@@ -300,42 +306,42 @@ bool deadCodeElimination(LLVMBasicBlockRef bb) { // TODO MAKE THIS BETTER
         // if we have a branch or return, enable flag to delete deadcode
         if(opcode == LLVMRet || opcode == LLVMBr) {
             terminatorReached = true;
-        } else {
-
-            if(opcode == LLVMCall || opcode == LLVMAlloca || opcode == LLVMStore) {
-                continue;
-            }
-
-            // if any other instruction, must be 
-            if(allOperands.count(instruction) == 0) {
-                instructionsToErase->push_back(instruction);
-            }
         }
     }
 
-    // delete all marked instructions
-    bool changed = eraseInstructions(instructionsToErase);
+    // delete all instructions that are not used - deadcode
 
     // continue to delete deadcode created by deleting deadcode until no more
-    if(changed) {
-        for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); 
-            instruction;
-            instruction = LLVMGetNextInstruction(instruction)) {
+    // walk the instructions backwards to do it in a single iteration
+    for (LLVMValueRef instruction = LLVMGetLastInstruction(bb); 
+        instruction;
+        instruction = LLVMGetPreviousInstruction(instruction)) {
 
-            // retrieve the opCode
-            LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
+        // retrieve the opCode
+        LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
 
-            if(opcode == LLVMRet || LLVMBr || opcode == LLVMCall || opcode == LLVMAlloca || opcode == LLVMStore) {
-                continue;
-            }
+        if(opcode == LLVMRet || opcode == LLVMBr || opcode == LLVMCall || opcode == LLVMAlloca || opcode == LLVMStore) {
+            continue;
+        }
 
-            if(allOperands.count(instruction) == 0) {
-                instructionsToErase->push_back(instruction);
+        // if we haven't used this operand
+        if(allOperands.count(instruction) == 0) {
+            // flag the instruction to delete
+            instructionsToErase->push_back(instruction);
+            for(int i = 0; i < LLVMGetNumOperands(instruction); i++) {
+                LLVMValueRef operandToUnuse = LLVMGetOperand(instruction, i);
+                assert(allOperands.count(operandToUnuse) != 0);
+
+                // remove its operands counts from the operand map
+                allOperands[operandToUnuse]--;
+                if(allOperands[operandToUnuse] == 0) {
+                    allOperands.erase(operandToUnuse);
+                }
             }
         }
-        changed = eraseInstructions(instructionsToErase);
     }
 
+    bool changed = eraseInstructions(instructionsToErase);
     delete(instructionsToErase);
 
     return changed;
@@ -665,18 +671,27 @@ bool performConstantProp(LLVMValueRef func) {
 
                 // loop over all instructions in r
                 set<LLVMValueRef>::iterator rIt = r.begin();
+                vector<LLVMValueRef> toErase;
                 while(rIt != r.end()) {
                     assert(LLVMGetInstructionOpcode(*rIt) == LLVMStore);
                     if(*rIt == instruction) {
+                        rIt++;
                         continue;
                     }
 
-                    // if it has the same store address, killed by instruction, remove from r
+                    // if it has the same store address, killed by instruction, flag to remove from r
                     if(addr == LLVMGetOperand(*rIt, 1)) {
-                        r.erase(*rIt);
+                        toErase.push_back(*rIt);
                     }
 
                     rIt++;
+                }
+
+                // remove all killed instructions from r
+                vector<LLVMValueRef>::iterator vIt = toErase.begin();
+                while(vIt != toErase.end()) {
+                    r.erase(*vIt);
+                    vIt++;
                 }
                 
             // case 2: load
@@ -694,6 +709,7 @@ bool performConstantProp(LLVMValueRef func) {
 
                     // ignore stores to other addresses
                     if(addr != LLVMGetOperand(*rIt, 1)) {
+                        rIt++;
                         continue;
                     }
 
@@ -708,6 +724,7 @@ bool performConstantProp(LLVMValueRef func) {
 
                     // assign first constant value
                     if(!firstConstFound) {
+                        firstConstFound = true;
                         constValue = storedValue;
                     }
 

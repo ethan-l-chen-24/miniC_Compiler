@@ -7,9 +7,10 @@ test_file = test
 
 clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb -gdwarf-4 -g
 syntax_files = ../syntax_analyzer/semantic_analysis.c ../syntax_analyzer/y.tab.c ../syntax_analyzer/lex.yy.c
+helper_files = ../helper/helper_functions.c
 
 build: llvm_gen.c $(main).c
-	clang++ $(clang_flags) -o $(source).out $(syntax_files) $(lib).c llvm_gen.c  $(main).c
+	clang++ $(clang_flags) -o $(source).out $(syntax_files) $(helper_files) $(lib).c llvm_gen.c  $(main).c
 
 test:
 	./$(source).out $(folder)/$(subfolder)/$(test_file).c $(folder)/llvm/$(test_file).ll

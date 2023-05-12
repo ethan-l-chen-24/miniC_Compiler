@@ -29,7 +29,7 @@ LLVMModuleRef testModule3();
 int main(int argc, char** argv){
 
 
-	LLVMModuleRef llvm_ir = testModule3();
+	LLVMModuleRef llvm_ir = testModule1();
 
     // add optimizations here
 	optimizeLLVM(llvm_ir);
@@ -65,6 +65,7 @@ LLVMModuleRef testModule1() {
     //Creating an alloc instruction and assignment
     LLVMValueRef m = LLVMBuildAlloca(builder, LLVMInt32Type(), "m"); 
     LLVMValueRef n = LLVMBuildAlloca(builder, LLVMInt32Type(), "n"); 
+    LLVMValueRef o = LLVMBuildAlloca(builder, LLVMInt32Type(), "o");
     LLVMSetAlignment(m, 4);
     LLVMValueRef val = LLVMConstInt(LLVMInt32Type(), 10, false);
     LLVMBuildStore(builder, val, m);
@@ -73,9 +74,11 @@ LLVMModuleRef testModule1() {
     LLVMValueRef temp = LLVMBuildLoad2(builder, LLVMInt32Type(), m, "");
     LLVMValueRef num = LLVMConstInt(LLVMInt32Type(), 12, false);
     LLVMValueRef add = LLVMBuildAdd(builder, temp, num, "");
+    LLVMValueRef temp2 = LLVMBuildLoad2(builder, LLVMInt32Type(), o, "");
+    LLVMValueRef add2 = LLVMBuildAdd(builder, add, temp2, "");
     LLVMBuildStore(builder, add, n);
 
-    // n has no use - should delete EVERYTHING except allocs
+    // m, o and add has no use - should delete those
 
     return mod;
 	
@@ -130,7 +133,7 @@ LLVMModuleRef testModule2() {
 }
 
 /* test module that tests:
- * constant folding
+ * constant propagation
  */
 LLVMModuleRef testModule3() {
     //Creating a module 
@@ -142,27 +145,7 @@ LLVMModuleRef testModule3() {
     LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 0, 0);
     LLVMValueRef func = LLVMAddFunction(mod, "test", ret_type);
 
-    //Creating a basic block
-    LLVMBasicBlockRef first = LLVMAppendBasicBlock(func, "");
-
-    //All instructions need to be created using a builder. The builder specifies
-    //where the instructions are added.
-    LLVMBuilderRef builder = LLVMCreateBuilder();
-    LLVMPositionBuilderAtEnd(builder, first);
-
-    //Creating an alloc instruction and assignment
-    LLVMValueRef m = LLVMBuildAlloca(builder, LLVMInt32Type(), "m"); 
-    LLVMSetAlignment(m, 4);
-
-    LLVMValueRef num1 = LLVMBuildInt(LLVMInt32Type(), 12, false);
-    LLVMValueRef num2 = LLVMConstInt(LLVMInt32Type(), 15, false);
-    LLVMValueRef add1 = LLVMBuildAdd(builder, num1, num2, "");
-    LLVMBuildStore(builder, add1, m);
-
-    LLVMValueRef out = LLVMBuildLoad2(builder, LLVMInt32Type(), m, "");
-    LLVMBuildRet(builder, out);
-
-    // the add statement should be folded
+    
 
     return mod;
 }

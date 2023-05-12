@@ -17,7 +17,7 @@ test:
 	./$(source).out load $(folder)/$(subfolder)/$(test_file).ll $(folder)/llvm_optimized/$(test_file).ll
 
 hard_test:
-	clang++ $(clang_flags) -o tester.out llvm_optimizations.c optimizer_tests.c
+	clang++ $(clang_flags) -o tester.out llvm_optimizations.c $(helper_files)  optimizer_tests.c
 	./tester.out $(folder)/llvm_optimized/hard_test.ll
 
 valgrind:
