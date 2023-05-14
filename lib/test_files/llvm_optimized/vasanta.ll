@@ -17,44 +17,40 @@ define dso_local i32 @func(i32 noundef %0) #0 {
   %9 = add nsw i32 %8, 10
   store i32 %9, ptr %4, align 4
   store i32 %9, ptr %5, align 4
-  %10 = load i32, ptr %4, align 4
-  %11 = load i32, ptr %5, align 4
   store i32 20, ptr %7, align 4
   store i32 10, ptr %4, align 4
-  br label %12
+  br label %10
 
-12:                                               ; preds = %15, %1
-  %13 = load i32, ptr %3, align 4
-  %14 = icmp slt i32 %13, 100
-  br i1 %14, label %15, label %20
+10:                                               ; preds = %13, %1
+  %11 = load i32, ptr %3, align 4
+  %12 = icmp slt i32 %11, 100
+  br i1 %12, label %13, label %18
 
-15:                                               ; preds = %12
-  %16 = load i32, ptr %3, align 4
-  %17 = add nsw i32 %16, 5
-  store i32 %17, ptr %3, align 4
-  store i32 20, ptr %6, align 4
-  %18 = load i32, ptr %4, align 4
-  %19 = add nsw i32 %18, 10
-  store i32 %19, ptr %7, align 4
-  br label %12, !llvm.loop !6
+13:                                               ; preds = %10
+  %14 = load i32, ptr %3, align 4
+  %15 = add nsw i32 %14, 5
+  store i32 %15, ptr %3, align 4
+  %16 = load i32, ptr %6, align 4
+  %17 = add nsw i32 %16, 10
+  store i32 %17, ptr %6, align 4
+  store i32 20, ptr %7, align 4
+  br label %10, !llvm.loop !6
 
-20:                                               ; preds = %12
-  %21 = load i32, ptr %7, align 4
-  %22 = icmp sgt i32 %21, 100
-  br i1 %22, label %23, label %25
+18:                                               ; preds = %10
+  br i1 false, label %19, label %21
 
-23:                                               ; preds = %20
-  %24 = load i32, ptr %6, align 4
-  store i32 %24, ptr %2, align 4
-  br label %26
+19:                                               ; preds = %18
+  %20 = load i32, ptr %6, align 4
+  store i32 %20, ptr %2, align 4
+  br label %22
 
-25:                                               ; preds = %20
+21:                                               ; preds = %18
   store i32 100, ptr %2, align 4
-  br label %26
+  br label %22
 
-26:                                               ; preds = %25, %23
-  %27 = load i32, ptr %2, align 4
-  ret i32 %27
+22:                                               ; preds = %21, %19
+  %23 = load i32, ptr %2, align 4
+  ret i32 %23
 }
 
 attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }

@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 #include <set>
-#define NDEBUG
+//#define NDEBUG
 #include <cassert>
 
 using namespace std;
@@ -363,8 +363,8 @@ bool constantFolding(LLVMBasicBlockRef bb) {
         // retrieve the opCode
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
 
-        // if we don't have a binary operator continue
-        if(!LLVMIsABinaryOperator(instruction)) {
+        // if we don't have a binary operator or compare continue
+        if(!LLVMIsABinaryOperator(instruction) && !LLVMIsAICmpInst(instruction)) {
             continue;
         }
 
@@ -397,6 +397,14 @@ bool constantFolding(LLVMBasicBlockRef bb) {
             case(LLVMMul): {
                 LLVMValueRef mul = LLVMConstMul(op1, op2);
                 LLVMReplaceAllUsesWith(instruction, mul);
+                instructionsToErase->push_back(instruction);
+                break;
+            }
+
+            case(LLVMICmp): {
+                LLVMIntPredicate pred = LLVMGetICmpPredicate(instruction);
+                LLVMValueRef cmp = LLVMConstICmp(pred, op1, op2);
+                LLVMReplaceAllUsesWith(instruction, cmp);
                 instructionsToErase->push_back(instruction);
                 break;
             }
@@ -493,11 +501,11 @@ void generateGen(LLVMValueRef func) {
                 if(activeStores.count(addr) != 0) {
                     assert(gen[basicBlock].count(activeStores[addr]) != 0);
                     gen[basicBlock].erase(activeStores[addr]);
-                    activeStores[addr] = instruction;
                 }
 
                 // add current instruction to gen
                 gen[basicBlock].insert(instruction);
+                activeStores[addr] = instruction;
             }
         }
     }
@@ -517,7 +525,7 @@ void generateKill(LLVMValueRef func) {
 
         // create bucket for basic block
         set<LLVMValueRef> killBucket;
-        gen[basicBlock] = killBucket;
+        kill[basicBlock] = killBucket;
 
         // loop through instructions
         for(LLVMValueRef instruction = LLVMGetFirstInstruction(basicBlock);
@@ -534,7 +542,7 @@ void generateKill(LLVMValueRef func) {
                 set<LLVMValueRef>::iterator it = addrSet.begin();
                 while(it != addrSet.end()) {
                     if(*it != instruction) { // ensure not the same instruction
-                        gen[basicBlock].insert(*it);
+                        kill[basicBlock].insert(*it);
                     }
                     it++;
                 }
@@ -588,17 +596,22 @@ void generateIn(LLVMBasicBlockRef bb) {
     // get the parent function, graph, and set of predecessors
     LLVMValueRef function = LLVMGetBasicBlockParent(bb);
     unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>> inGraph = graphs[function][1];
-    assert(inGraph.count(bb) != 0);
+    
+    // if first basic block (no predecessors, skip in)
+    if(inGraph.count(bb) == 0) {
+        return;
+    }
+
     set<LLVMBasicBlockRef> predecessors = inGraph[bb];
 
     // loop through the predecessors and all of their outs
     set<LLVMBasicBlockRef>::iterator it = predecessors.begin();
     while(it != predecessors.end()) {
-        assert(out.count(bb) != 0);
+        assert(out.count(*it) != 0);
 
         // loop through all of the outs of the predecessors
-        set<LLVMValueRef>::iterator outIt = out[bb].begin();
-        while(outIt != out[bb].end()) {
+        set<LLVMValueRef>::iterator outIt = out[*it].begin();
+        while(outIt != out[*it].end()) {
             // insert instructions into in
             in[bb].insert(*outIt);
             outIt++;
