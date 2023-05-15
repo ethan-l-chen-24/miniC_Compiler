@@ -29,7 +29,7 @@ LLVMModuleRef testModule3();
 int main(int argc, char** argv){
 
 
-	LLVMModuleRef llvm_ir = testModule1();
+	LLVMModuleRef llvm_ir = testModule3();
 
     // add optimizations here
 	optimizeLLVM(llvm_ir);
@@ -145,7 +145,43 @@ LLVMModuleRef testModule3() {
     LLVMTypeRef ret_type = LLVMFunctionType(LLVMInt32Type(), param_types, 0, 0);
     LLVMValueRef func = LLVMAddFunction(mod, "test", ret_type);
 
-    
+     //Creating a basic block
+    LLVMBasicBlockRef first = LLVMAppendBasicBlock(func, "");
+
+    //All instructions need to be created using a builder. The builder specifies
+    //where the instructions are added.
+    LLVMBuilderRef builder = LLVMCreateBuilder();
+    LLVMPositionBuilderAtEnd(builder, first);
+
+    //Creating an alloc instruction and assignment
+    LLVMValueRef m = LLVMBuildAlloca(builder, LLVMInt32Type(), "m"); 
+    LLVMValueRef n = LLVMBuildAlloca(builder, LLVMInt32Type(), "n"); 
+    LLVMSetAlignment(m, 4);
+    LLVMSetAlignment(n, 4);
+
+    // m will propagate in the same block
+    LLVMValueRef val = LLVMConstInt(LLVMInt32Type(), 10, false);
+    LLVMBuildStore(builder, val, m);
+    LLVMValueRef val2 = LLVMConstInt(LLVMInt32Type(), 15, false);
+    LLVMValueRef mVal = LLVMBuildLoad2(builder, LLVMInt32Type(), m, "");
+    LLVMValueRef val3 = LLVMConstInt(LLVMInt32Type(), 8, false);
+    LLVMBuildStore(builder, val3, n);
+    LLVMValueRef nVal = LLVMBuildLoad2(builder, LLVMInt32Type(), n, "");
+    LLVMValueRef add = LLVMBuildAdd(builder, mVal, nVal, "");
+    LLVMBuildStore(builder, add, m);
+    LLVMValueRef val4 = LLVMConstInt(LLVMInt32Type(), 20, false);
+    LLVMBuildStore(builder, val4, n);
+
+    // branch to second block
+    LLVMBasicBlockRef secondBlock = LLVMAppendBasicBlock(func, "");
+    LLVMBuildBr(builder, secondBlock);
+    LLVMPositionBuilderAtEnd(builder, secondBlock);
+
+    // n will propagate in the next block
+    LLVMValueRef val5 = LLVMConstInt(LLVMInt32Type(), 20, false);
+    LLVMBuildStore(builder, val5, n);
+    LLVMValueRef nVal2 = LLVMBuildLoad2(builder, LLVMInt32Type(), n, "");
+    LLVMBuildRet(builder, nVal2);
 
     return mod;
 }
