@@ -21,7 +21,7 @@ hard_test:
 	./tester.out $(folder)/llvm_optimized/hard_test.ll
 
 valgrind:
-	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out $(folder)/$(subfolder)/$(test_file).c
+	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out build $(folder)/$(subfolder)/$(test_file).c $(folder)/llvm_optimized/$(test_file).ll
 
 debug:
 	gdb --args ./$(source).out load $(folder)/$(subfolder)/$(test_file).ll $(folder)/llvm_optimized/$(test_file).ll

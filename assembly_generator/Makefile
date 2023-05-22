@@ -11,17 +11,17 @@ llvm_builder_files = ../llvm_ir_builder/llvm_gen.c
 optimizer_files = ../optimizer/llvm_optimizations.c
 helper_files = ../helper/helper_functions.c
 
-build: llvm_optimizations.c $(main).c
+build: llvm_to_assembly.c $(main).c
 	clang++ $(clang_flags) -o $(source).out $(syntax_files) $(llvm_builder_files) $(optimizer_files) $(helper_files) $(lib).c llvm_to_assembly.c $(main).c
 
 test:
-	./$(source).out
+	./$(source).out build $(folder)/$(subfolder)/$(test_file).c $(folder)/assembly/$(test_file).s
 
 valgrind:
-	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out
+	valgrind --leak-check=full --show-leak-kinds=all ./$(source).out build $(folder)/$(subfolder)/$(test_file).c $(folder)/assembly/$(test_file).s
 
 debug:
-	gdb --args ./$(source).out
+	gdb --args ./$(source).out build $(folder)/$(subfolder)/$(test_file).c $(folder)/assembly/$(test_file).s
 
 clean:
 	rm *.out *.o *.ll

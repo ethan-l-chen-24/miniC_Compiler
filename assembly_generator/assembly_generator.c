@@ -11,10 +11,11 @@
 #include <llvm-c/Core.h>
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
-#include "../helper/helper_functions.h"
 #include "../syntax_analyzer/semantic_analysis.h"
 #include "../llvm_ir_builder/llvm_gen.h"
-#include "llvm_optimizations.h"
+#include "../optimizer/llvm_optimizations.h"
+#include "../helper/helper_functions.h"
+#include "llvm_to_assembly.h"
 using namespace std;
 
 /* EXTERNS */
@@ -49,9 +50,9 @@ int main(int argc, char** argv){
 		// add optimizations here
 		optimizeLLVM(llvm_ir);
 
-		if(argc == 4) {
-    		LLVMPrintModuleToFile(llvm_ir, argv[3], NULL);
-		}
+		// generate assembly
+		codegen(llvm_ir, argv[3]);
+
 		yylex_destroy();
 		freeNode(root);
 
@@ -61,9 +62,8 @@ int main(int argc, char** argv){
 		// add optimizations here
 		optimizeLLVM(llvm_ir);
 
-		if(argc == 4) {
-    		LLVMPrintModuleToFile(llvm_ir, argv[3], NULL);
-		}
+		// generate assembly
+		codegen(llvm_ir, argv[3]);
 	}
 
 	// close

@@ -93,3 +93,28 @@ array<unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>>, 2> generateGraph
     return graphs;
 
 }
+
+
+
+/* Loads a LLVM Model given a filepath */
+LLVMModuleRef createLLVMModel(char * filename) {
+	char *err = 0;
+
+	LLVMMemoryBufferRef ll_f = 0;
+	LLVMModuleRef m = 0;
+
+	LLVMCreateMemoryBufferWithContentsOfFile(filename, &ll_f, &err);
+
+	if (err != NULL) { 
+		printf("%s", err);
+		return NULL;
+	}
+	
+	LLVMParseIRInContext(LLVMGetGlobalContext(), ll_f, &m, &err);
+
+	if (err != NULL) {
+		printf("%s", err);
+	}
+
+	return m;
+}

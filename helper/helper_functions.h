@@ -11,3 +11,5 @@ using namespace std;
 /* --------- */
 
 array<unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>>, 2> generateGraphs(LLVMValueRef func);
+
+LLVMModuleRef createLLVMModel(char * filename);
