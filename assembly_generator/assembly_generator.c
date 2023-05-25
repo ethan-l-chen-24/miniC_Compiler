@@ -46,6 +46,7 @@ int main(int argc, char** argv){
 		// generate the AST
 		yyparse();
 		llvm_ir = createLLVMModelFromAST(root);
+		optimizeLLVMBasicBlocks(llvm_ir);
 
 		// add optimizations here
 		optimizeLLVM(llvm_ir);
@@ -53,7 +54,6 @@ int main(int argc, char** argv){
 		// generate assembly
 		codegen(llvm_ir, argv[3]);
 
-		yylex_destroy();
 		freeNode(root);
 
 	} else {
@@ -67,8 +67,10 @@ int main(int argc, char** argv){
 	}
 
 	// close
-	if (yyin != stdin)
+	if (yyin != stdin) {
 		fclose(yyin);
+		yylex_destroy();
+	}
 	
 	return 0;
 }

@@ -8,6 +8,7 @@ llvm_builder_files = llvm_ir_builder/llvm_gen.c
 optimizer_files = optimizer/llvm_optimizations.c
 assembly_gen_files = assembly_generator/llvm_to_assembly.c
 helper_files = helper/helper_functions.c
+lib = lib/ast/ast
 
 .PHONY: all modules compile clean
 

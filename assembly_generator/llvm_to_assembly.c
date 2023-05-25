@@ -13,6 +13,7 @@
 #include <array>
 #include <string>
 #include <algorithm>
+#include <iostream>
 //#define NDEBUG
 #include <cassert>
 
@@ -61,6 +62,7 @@ void getIndices(LLVMBasicBlockRef bb) {
 
         // assign the instruction an index value
         instIndex[instruction] = counter;
+        counter++;
     }
 }
 
@@ -75,6 +77,13 @@ void computeLiveness(LLVMBasicBlockRef bb) {
         instruction;
         instruction = LLVMGetNextInstruction(instruction)) {
 
+        LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
+            
+        // skip alloca instructions or any that do not return some value
+        if(opcode == LLVMAlloca) {
+            continue;
+        }
+
         // add begin index for the instruction
         if(liveRange.count(instruction) == 0) {
             array<int, 2> arr;
@@ -86,7 +95,11 @@ void computeLiveness(LLVMBasicBlockRef bb) {
         // loop through operands and update end index
         for(int i = 0; i < LLVMGetNumOperands(instruction); i++) {
             LLVMValueRef operand = LLVMGetOperand(instruction, i);
-            assert(liveRange.count(operand) != 0);
+
+            // skip if the operand doesn't have a solid instruction value
+            if(liveRange.count(operand) == 0) {
+                continue;
+            }
 
             liveRange[operand][1] = instIndex[instruction];
         }
@@ -104,6 +117,7 @@ void computeLiveness(LLVMBasicBlockRef bb) {
     vector<LLVMValueRef>::iterator it = instructionsToErase.begin();
     while(it != instructionsToErase.end()) {
         liveRange.erase(*it);
+        it++;
     }
 }
 
@@ -116,7 +130,7 @@ void sortList() {
 
     // sort by end points in liveRange (decreasing order)
     sort(sortedList.begin(), sortedList.end(), [](LLVMValueRef a, LLVMValueRef b) {
-        return (liveRange[a][1] < liveRange[b][1]);
+        return (liveRange[a][1] >liveRange[b][1]);
     });
 }
 
@@ -139,8 +153,9 @@ void registerAllocation(LLVMValueRef func) {
         regPool.push_back("edx");
 
         // build register map and liveness map
-        regMap.clear();
         instIndex.clear();
+        liveRange.clear();
+        sortedList.clear();
         getIndices(bb);
         computeLiveness(bb);
         sortList();
@@ -153,13 +168,9 @@ void registerAllocation(LLVMValueRef func) {
 
             LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
             
-            // skip alloca instructions or any that do not return some value
-            if(opcode == LLVMAlloca) {
-                index++;
-                continue;
-
-            // if instruction without return value, just check operands
-            } else if(opcode == LLVMStore || opcode == LLVMBr) {
+            // skip alloca instructions or any that do not return some value that are used
+            // this covers store, branch, return instructions, as well as allocas and calls with void return types
+            if(liveRange.count(instruction) == 0) {
                 releaseOperands(instruction, index);
                 index++;
                 continue;
@@ -170,7 +181,7 @@ void registerAllocation(LLVMValueRef func) {
                 LLVMValueRef operand1 = LLVMGetOperand(instruction, 0);
 
                 // check if the operand is assigned to a register
-                if(regMap.count(operand1) > 0 && regMap[operand1] == "-1") {
+                if(regMap.count(operand1) > 0 && regMap[operand1] != "-1") {
                     assert(liveRange.count(operand1) != 0);
 
                     // if this is that operands last use, we can transfer the register
@@ -181,7 +192,7 @@ void registerAllocation(LLVMValueRef func) {
 
                 // check the second operand, and if it ends, return its register to register pool
                 LLVMValueRef operand2 = LLVMGetOperand(instruction, 1);
-                if(regMap.count(operand2) > 0 && regMap[operand2] == "-1") {
+                if(regMap.count(operand2) > 0 && regMap[operand2] != "-1") {
                     assert(liveRange.count(operand2) != 0);
 
                     // if this is that operands last use, we can transfer the register
@@ -205,7 +216,7 @@ void registerAllocation(LLVMValueRef func) {
                 // get a value to spill
                 LLVMValueRef spillVal = findSpill();
                 assert(liveRange.count(spillVal) != 0 && liveRange.count(instruction) != 0);
-                assert(regMap[spillVal] == "-1");
+                assert(regMap[spillVal] != "-1");
 
                 // if end of instruction is after end of spill value
                 if(liveRange[instruction][1] > liveRange[spillVal][1]) {
@@ -253,14 +264,19 @@ void releaseOperands(LLVMValueRef instruction, int index) {
     // loop through operands
     for(int i = 0; i < LLVMGetNumOperands(instruction); i++) {
         LLVMValueRef operand = LLVMGetOperand(instruction, i);
-        assert(liveRange.count(operand) != 0);
+        if(liveRange.count(operand) == 0) {
+            continue;
+        }
 
         // if live range of an operand ends, release register
         if(liveRange[operand][1] == index) {
-            assert(regMap.count(operand) != 0);
+            // if parameter not assigned a value 
+            if(regMap.count(operand) == 0) {
+                continue;
+            }
 
             // only release register if the operand isn't spilled
-            if(regMap[operand] == "-1") {
+            if(regMap[operand] != "-1") {
                 regPool.push_back(regMap[operand]);
             } 
         }
@@ -278,6 +294,16 @@ void codegen(LLVMModuleRef mod, char* filepath) {
         func = LLVMGetNextFunction(func)) {
 
         registerAllocation(func);
+
+        for(auto i : regMap) {
+            LLVMDumpValue(i.first);
+            printf("\n");
+            cout << i.second;
+            printf("\n");
+        }
+
+        bool here = true;
+
     }
 
 }
