@@ -1,4 +1,4 @@
-	.file	"../lib/test_files/files/p1.c"
+	.file	"lib/test_files/files/p1.c"
 	.text
 	.type	fun
 	.type	fun, @function

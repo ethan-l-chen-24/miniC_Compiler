@@ -1,9 +1,20 @@
 # Mini-C Compiler
 ## Ethan Chen, COSC 57, F004H1G
 
-This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and call `make` and then `make compile`. Provided in `lib/test_files` are two folders: `files` and `semantic_tests` which can be used as test files for the different parts of the compiler. The `helper` module contains a library of auxiliary helper functions generic to all sections of the project.
+This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and adjust the `target` variable to set the outputted target file name. Call `make` and then `make compile` to compile the code. Provided in `lib/test_files` are multiple folders:
+ - `files` contains `.c` files to be tested
+ - `tokenized` contains the tokenized `.c` files from `syntax_analyzer`
+ - `semantic_tests` contains files that should fail the `semantic_analysis` in the `syntax_analyzer`
+ - `asts` contains the outputted abstract syntax trees from `syntax_analyzer`
+ - `llvm` contains the outputted llvm module from `llvm_ir_builder`
+ - `llvm_given` contains hardcoded llvm modules
+ - `llvm_optimized` contains the outputted, optimized llvm module from `optimizer`
+ - `assembly` contains the outputted assembly from `assembly_generator`
+ - `output` contains outputted assembly files run through the top level `main`
+ 
+ Additionally, there is a `helper` module that contains a library of auxiliary helper functions generic to all sections of the project.
 
-The compiler is broken up into distinct sections: 
+The compiler is broken up into distinct modules: 
 
 ### 1. Syntax Analyzer
 
@@ -11,7 +22,7 @@ The Syntax Analyzer parses the c file into individual tokens, and then analyzes 
 
 ### 2. LLVM IR Builder
 
-The LLVM IR translates the Abstract Syntax Tree into a generic LLVM Intermediate Representation, using the LLVM-C API. To test the LLVM IR Builder, `cd` into `llvm_ir_builder` and build using `make`. In the Makefile, , you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.ll` file will be outputted in the `lib/test_files/llvm` directory, allowing you to check the semantics of the LLVM IR against the original code.
+The LLVM IR translates the Abstract Syntax Tree into a generic LLVM Intermediate Representation, using the LLVM-C API. To test the LLVM IR Builder, `cd` into `llvm_ir_builder` and build using `make`. In the Makefile, you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.ll` file will be outputted in the `lib/test_files/llvm` directory, allowing you to check the semantics of the LLVM IR against the original code.
 
 ### 3. Optimizer
 
@@ -25,4 +36,4 @@ To test the Optimizer, `cd` into `optimizer` and build using `make`. In the Make
 
 ### 4. Assembly Generator
 
-Work in Progress
+The Assembly Generator takes any LLVM IR and converts into x86 assembly instructions. To test the Assembly Generator, `cd` into `assembly_generator` and build using `make`. In the Makefile, you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.s` file will be outputted in the `lib/test_files/assembly` directory, allowing you to check and test the outputted assembly code.

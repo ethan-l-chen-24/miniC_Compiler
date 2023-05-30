@@ -301,11 +301,11 @@ void releaseOperands(LLVMValueRef instruction, int index) {
 /* Generates the assembly code given a LLVM module
  * and outputs the assembly to the given filepath
  */
-void codegen(LLVMModuleRef mod, char* filepath) {
+void codegen(LLVMModuleRef mod, char* filename) {
     assert(mod != NULL);
-    assert(filepath != NULL);
+    assert(filename != NULL);
 
-    fptr = fopen(filepath, "w");
+    fptr = fopen(filename, "w");
 
     // loop through each function
     for(LLVMValueRef func = LLVMGetFirstFunction(mod);
@@ -379,7 +379,7 @@ void codegen(LLVMModuleRef mod, char* filepath) {
 
     }
 
-    fclose(fptr);
+    fclose(fptr); 
 }
 
 /* assigns each basic block in the module a char* label
@@ -625,10 +625,10 @@ void handleBranch(LLVMValueRef instruction) {
         LLVMIntPredicate pred = LLVMGetICmpPredicate(cmp);
 
         // get both blocks
-        LLVMBasicBlockRef block1 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 0);
+        LLVMBasicBlockRef block1 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 1);
         assert(bbLabels.count(block1) != 0);
         string label1 = bbLabels[block1];
-        LLVMBasicBlockRef block2 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 1);
+        LLVMBasicBlockRef block2 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 2);
         assert(bbLabels.count(block2) != 0);
         string label2 = bbLabels[block2];
 

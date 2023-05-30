@@ -2,4 +2,4 @@
 #include <llvm-c/IRReader.h>
 #include <llvm-c/Types.h>
 
-void codegen(LLVMModuleRef mod, char* filepath);
+void codegen(LLVMModuleRef mod, char* filename);
