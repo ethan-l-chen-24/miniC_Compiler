@@ -3,7 +3,7 @@ main = assembly_generator
 source = assembly
 folder = ../lib/test_files
 subfolder = files
-test_file = test
+test_file = p1
 
 clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb -gdwarf-4 -g
 syntax_files = ../syntax_analyzer/semantic_analysis.c ../syntax_analyzer/y.tab.c ../syntax_analyzer/lex.yy.c

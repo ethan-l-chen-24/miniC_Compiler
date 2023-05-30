@@ -44,7 +44,7 @@ int main(int argc, char** argv){
 	if(strcmp("build", argv[1]) == 0) {
 		// generate the AST
 		yyparse();
-		llvm_ir = createLLVMModelFromAST(root);
+		llvm_ir = createLLVMModelFromAST(root, argv[2]);
 		optimizeLLVMBasicBlocks(llvm_ir);
 
 		// add optimizations here

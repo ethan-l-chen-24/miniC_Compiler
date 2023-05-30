@@ -39,7 +39,7 @@ int main(int argc, char** argv){
     // generate the AST
 	yyparse();
 
-    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root);
+    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root, argv[1]);
 	optimizeLLVMBasicBlocks(llvm_ir);
 
 	if(argc == 3) {

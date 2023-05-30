@@ -32,12 +32,13 @@ void registerAllocation(LLVMValueRef func);
 
 // other helper methods
 void createBBLabels(LLVMValueRef func);
-void printDirectives(LLVMValueRef func);
+void printDirectives(LLVMValueRef func, const char* filename);
 void printFunctionEnd(LLVMValueRef func);
 void getOffsetMap(LLVMValueRef func);
+void printStack();
 
 // instruction specific helper methods
-void handleRet(LLVMValueRef instruction);
+void handleRet(LLVMValueRef instruction, LLVMValueRef func);
 void handleLoad(LLVMValueRef instruction);
 void handleStore(LLVMValueRef instruction);
 void handleCall(LLVMValueRef instruction);
@@ -55,7 +56,7 @@ vector<LLVMValueRef> sortedList;
 unordered_map<LLVMValueRef, string> regMap;
 vector<string> regPool;
 
-unordered_map<LLVMBasicBlockRef, char*> bbLabels;
+unordered_map<LLVMBasicBlockRef, string> bbLabels;
 unordered_map<LLVMValueRef, int> offsetMap;
 int localMem;
 
@@ -178,10 +179,11 @@ void registerAllocation(LLVMValueRef func) {
         sortList();
 
         // loop through instructions
-        int index = 0;
+        int index = -1;
         for(LLVMValueRef instruction = LLVMGetFirstInstruction(bb);
             instruction;
             instruction = LLVMGetNextInstruction(instruction)) {
+            index++;
 
             LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
             
@@ -189,23 +191,12 @@ void registerAllocation(LLVMValueRef func) {
             // this covers store, branch, return instructions, as well as allocas and calls with void return types
             if(liveRange.count(instruction) == 0) {
                 releaseOperands(instruction, index);
-                index++;
                 continue;
 
             // if arithmetic, check for register transfer
             } else if(opcode == LLVMAdd || opcode == LLVMSub || opcode == LLVMMul) {
                 assert(LLVMGetNumOperands(instruction) == 2);
                 LLVMValueRef operand1 = LLVMGetOperand(instruction, 0);
-
-                // check if the operand is assigned to a register
-                if(regMap.count(operand1) > 0 && regMap[operand1] != "-1") {
-                    assert(liveRange.count(operand1) != 0);
-
-                    // if this is that operands last use, we can transfer the register
-                    if(liveRange[operand1][1] == index) {
-                        regMap[instruction] = regMap[operand1];
-                    }
-                }
 
                 // check the second operand, and if it ends, return its register to register pool
                 LLVMValueRef operand2 = LLVMGetOperand(instruction, 1);
@@ -218,9 +209,17 @@ void registerAllocation(LLVMValueRef func) {
                     }
                 }
 
-                index++;
-                continue;
-            } else 
+                // check if the operand is assigned to a register
+                if(regMap.count(operand1) > 0 && regMap[operand1] != "-1") {
+                    assert(liveRange.count(operand1) != 0);
+
+                    // if this is that operands last use, we can transfer the register
+                    if(liveRange[operand1][1] == index) {
+                        regMap[instruction] = regMap[operand1];
+                        continue;
+                    }   
+                } 
+            } 
             
             // in all other cases, just get a register or spill
             if(regPool.size() > 0) {
@@ -239,15 +238,14 @@ void registerAllocation(LLVMValueRef func) {
                 if(liveRange[instruction][1] > liveRange[spillVal][1]) {
                     regMap[instruction] = regMap[spillVal];
                     regMap[spillVal] = "-1";
+                } else {
+                    regMap[instruction] = "-1";
                 }
 
             }
 
             // release operands
             releaseOperands(instruction, index);
-
-            // increment instruction index
-            index++;
         }
 
     }
@@ -314,15 +312,26 @@ void codegen(LLVMModuleRef mod, char* filepath) {
         func;
         func = LLVMGetNextFunction(func)) {
 
+        if(!LLVMGetFirstBasicBlock(func)) {
+            continue;
+        }
+
         // allocate registers and populate global variables
+        size_t* len;
+        createBBLabels(func);
         registerAllocation(func);
-        printDirectives();
-        getOffsetMap();
+        printDirectives(func, LLVMGetSourceFileName(mod, len));
+        getOffsetMap(func);
 
         // loop through basic blocks
         for(LLVMBasicBlockRef bb = LLVMGetFirstBasicBlock(func);
             bb;
             bb = LLVMGetNextBasicBlock(bb)) {
+
+            fprintf(fptr, "%s:\n", bbLabels[bb].c_str());
+            if(bb == LLVMGetFirstBasicBlock(func)) {
+                printStack();
+            }
 
             // loop through instructions
             for(LLVMValueRef instruction = LLVMGetFirstInstruction(bb);
@@ -334,7 +343,7 @@ void codegen(LLVMModuleRef mod, char* filepath) {
                 // handle instruction types
                 switch(op) {
                     case LLVMRet:
-                        handleRet(instruction);
+                        handleRet(instruction, func);
                         break;
                     case LLVMLoad:
                         handleLoad(instruction);
@@ -360,12 +369,17 @@ void codegen(LLVMModuleRef mod, char* filepath) {
                     case LLVMMul:
                         handleArithmetic(instruction);
                         break; 
+                    default:
+                        break;
                 }
             }
 
+            fprintf(fptr, "\n");
         }
 
     }
+
+    fclose(fptr);
 }
 
 /* assigns each basic block in the module a char* label
@@ -381,30 +395,40 @@ void createBBLabels(LLVMValueRef func) {
         bb = LLVMGetNextBasicBlock(bb)) {
 
         if(i == 0) {
-            char firstLabel[] = ".LFB0";
+            string firstLabel = ".LFB0";
             bbLabels[bb] = firstLabel;
         } else {
-            char buf[256];
-            char* label = ".";
+            char buf[36];
             sprintf(buf, ".L%d", i);
 
             // concatenate index to it
-            bbLabels[bb] = buf;
+            bbLabels[bb] = string(buf);
         }
 
         i++;
     }
-
 }
 
 /* prints the directives of the function */
-void printDirectives(LLVMValueRef func) {
+void printDirectives(LLVMValueRef func, const char* filename) {
+    assert(func != NULL);
 
+    const char* functionName = LLVMGetValueName(func);
+
+    // print directives
+    fprintf(fptr, "\t.file\t\"%s\"\n", filename);
+    fprintf(fptr, "\t.text\n");
+    fprintf(fptr, "\t.type\t%s\n", functionName);
+    fprintf(fptr, "\t.type\t%s, @function\n", functionName);
+    fprintf(fptr, "%s:\n", functionName);
 }
 
 /* prints the instructions to close a function */
 void printFunctionEnd(LLVMValueRef func) {
+    assert(func != NULL);
 
+    fprintf(fptr, "\tleave\n");
+    fprintf(fptr, "\tret\n");
 }
 
 /* populates the offset map with allocas mapped 
@@ -423,13 +447,34 @@ void getOffsetMap(LLVMValueRef func) {
     int offset = 0;
 
     // loop through all allocas instructions
-    while(allocaInstruction != NULL && LLVMGetOpcode(allocaInstruction) == LLVMAlloca) {
+    while(allocaInstruction != NULL && LLVMGetInstructionOpcode(allocaInstruction) == LLVMAlloca) {
         offset += 4;
-        offsetMap[allcaInstruction] = offset;
+        offsetMap[allocaInstruction] = offset;
+        allocaInstruction = LLVMGetNextInstruction(allocaInstruction);
+    }
+
+    // loop through spill values
+    for(auto it : regMap) {
+        if(it.second == "-1") {
+            offset += 4;
+            offsetMap[it.first] = offset;
+        }
     }
 
     // set global local mem value
     localMem = offset;
+}
+
+/* prints the offset map instructions at the opening of a function*/
+void printStack() {
+    // push base pointer
+    fprintf(fptr, "\tpushl %%ebp\n");
+
+    // move base pointer to stack pointer
+    fprintf(fptr, "\tmovl %%esp, %%ebp\n");
+
+    // move stack pointer to allocate enough space for allocas and spills
+    fprintf(fptr, "\tsubl $%d, %%esp\n", localMem);
 }
 
 /* handles return statements */
@@ -438,18 +483,20 @@ void handleRet(LLVMValueRef instruction, LLVMValueRef func) {
     assert(LLVMGetInstructionOpcode(instruction) == LLVMRet);
     assert(LLVMGetNumOperands(instruction) == 1);
 
+    // get return value
     LLVMValueRef retVal = LLVMGetOperand(instruction, 0);
-    if(LLVMIsAConstantInt(retVal)) {
+
+    if(LLVMIsAConstantInt(retVal)) { // consntant
         int val = LLVMConstIntGetSExtValue(retVal);
-        fprintf(fptr, "movl %d, %%eax\n", val);
-    } else if(regMap.count(retVal) != 0 && regMap[retVal] == "-1") {
+        fprintf(fptr, "\tmovl %d, %%eax\n", val);
+    } else if(regMap.count(retVal) != 0 && regMap[retVal] == "-1") { // in memory
         int offset = offsetMap[retVal];
-        fprintf(fptr, "movl %d(%%ebp), %%eax\n", offset);
-    } else if(regMap.count(retVal) != 0) {
-        fprintf(fptr, "movl %s, %%eax\n", regMap[retVal].c_str());
+        fprintf(fptr, "\tmovl %d(%%ebp), %%eax\n", offset);
+    } else if(regMap.count(retVal) != 0) { // in register
+        fprintf(fptr, "\tmovl %%%s, %%eax\n", regMap[retVal].c_str());
     }
 
-    printFunctionEnd(func); // TODO add func as parameter
+    printFunctionEnd(func); // TODO FILL IN
 }
 
 /* handles load statements */
@@ -458,12 +505,13 @@ void handleLoad(LLVMValueRef instruction) {
     assert(LLVMGetInstructionOpcode(instruction) == LLVMLoad);
     assert(LLVMGetNumOperands(instruction) == 1);
 
+    // get load value
     LLVMValueRef loadVal = LLVMGetOperand(instruction, 0);
 
-    if(regMap.count(instruction) != 0 && regMap[instruction] != "-1") {
+    if(regMap.count(instruction) != 0 && regMap[instruction] != "-1") { // load into register if from memory
         assert(offsetMap.count(loadVal) != 0);
-        int offset = offsetMap[retVal];
-        fprintf(fptr, "movl %d(%%ebp), %s\n", offset, regMap[loadVal].c_str());
+        int offset = offsetMap[loadVal];
+        fprintf(fptr, "\tmovl %d(%%ebp), %s\n", offset, regMap[loadVal].c_str());
     }
 }
 
@@ -473,28 +521,33 @@ void handleStore(LLVMValueRef instruction) {
     assert(LLVMGetInstructionOpcode(instruction) == LLVMStore);
     assert(LLVMGetNumOperands(instruction) == 2);
 
-    // handle if A is a parameter TODO
+    // handles parameter case
+    if(regMap.count(instruction) == 0) {
+        return;
+    }
+
+    // get store value and destination
     LLVMValueRef storeVal = LLVMGetOperand(instruction, 0);
     LLVMValueRef destination = LLVMGetOperand(instruction, 1);
     assert(offsetMap.count(destination) != 0);
 
-    if(LLVMIsAConstantInt(storeVal)) {
+    if(LLVMIsAConstantInt(storeVal)) { // constant store value
         int val = LLVMConstIntGetSExtValue(storeVal);
         int offset = offsetMap[destination];
-        fprintf(fptr, "movl %d, %d(%%ebp)\n", val, offset);
+        fprintf(fptr, "\tmovl %d, %d(%%ebp)\n", val, offset);
 
     } else {
         assert(regMap.count(storeVal) != 0);
 
-        if(regMap[storeVal] == "-1") {
+        if(regMap[storeVal] == "-1") { // store value in memory
             int valOffset = offsetMap[storeVal];
             int destinationOffset = offsetMap[destination];
-            fprintf(fptr, "movl %d(%%ebp), %%eax\n", valOffset)
-            fprintf(fptr, "movl %%eax, %d(%%ebp)\n", destinationOffset);
+            fprintf(fptr, "\tmovl %d(%%ebp), %%eax\n", valOffset);
+            fprintf(fptr, "\tmovl %%eax, %d(%%ebp)\n", destinationOffset);
             
-        } else {
+        } else { // store value in a register
             int offset = offsetMap[storeVal];
-            fprintf(fptr, "movl %s, %d(%%ebp)\n", regMap[storeVal].c_str(), offset);
+            fprintf(fptr, "\tmovl %s, %d(%%ebp)\n", regMap[storeVal].c_str(), offset);
         }
     }
 }
@@ -504,89 +557,107 @@ void handleCall(LLVMValueRef instruction) {
     assert(instruction != NULL);
     assert(LLVMGetInstructionOpcode(instruction) == LLVMCall);
 
-    funcName = ""; // TODODODODO
-
-    fprintf(fptr, "pushl %%ebx\n");
-    fprintf(fptr, "pushl %%ecx\n");
-    fprintf(fptr, "pushl %%edx\n");
+    // push registers to the stack
+    fprintf(fptr, "\tpushl %%ebx\n");
+    fprintf(fptr, "\tpushl %%ecx\n");
+    fprintf(fptr, "\tpushl %%edx\n");
 
     LLVMValueRef calledFunc = LLVMGetCalledValue(instruction);
     int numParams = LLVMCountParams(calledFunc);
 
+    const char* funcName = LLVMGetValueName(calledFunc);
+
+    // if we have a parameter
     if(numParams == 1) {
         LLVMValueRef param = LLVMGetParam(calledFunc, 0);
 
-        if(LLVMIsAConstantInt(param)) {
+        // push the parameter to the stack
+        if(LLVMIsAConstantInt(param)) { // constant parameter
             int val = LLVMConstIntGetSExtValue(param);
-            fprintf(fptr, "pushl $%d", val);
+            fprintf(fptr, "\tpushl $%d\n", val);
         } else {
             assert(regMap.count(param) != 0);
 
-            if(regMap[param] == "-1") {
+            if(regMap[param] == "-1") { // parameter in memory
                 assert(offsetMap.count(param) != 0);
                 int offset = offsetMap[param];
 
-                fprintf(fptr, "pushl %d(%%ebp)", offset);
-            } else {
-                fprintf(fptr, "pushl %s", regMap[param].c_str());
+                fprintf(fptr, "\tpushl %d(%%ebp)\n", offset);
+
+            } else { // parameter in a register
+                fprintf(fptr, "\tpushl %s\n", regMap[param].c_str());
             }
         }
     }
 
-    fprintf(fptr, "call %s", funcName.c_str());
+    // call the function
+    fprintf(fptr, "\tcall %s\n", funcName);
 
+    // if we have a parameter, remove that space from the stack
     if(numParams == 1) {
-        fprintf(fptr, "addl $4, %%esp");
+        fprintf(fptr, "\taddl $4, %%esp\n");
     }
 
-    fprintf(fptr, "popl %%ebx\n");
-    fprintf(fptr, "popl %%ecx\n");
-    fprintf(fptr, "popl %%edx\n");
+    // pop off all of the registers
+    fprintf(fptr, "\tpopl %%edx\n");
+    fprintf(fptr, "\tpopl %%ecx\n");
+    fprintf(fptr, "\tpopl %%ebx\n");
 }
 
 /* handles branch statements */
 void handleBranch(LLVMValueRef instruction) {
     assert(instruction != NULL);
-    assert(LLVMGetInstructionOpcode(instruction) == LLVMCallBr);
+    assert(LLVMGetInstructionOpcode(instruction) == LLVMBr);
 
+    // single branch
     if(LLVMGetNumOperands(instruction) == 1) {
         LLVMBasicBlockRef nextBlock = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 0);
-        char* label = bbLabels[nextBlock];
+        string label = bbLabels[nextBlock];
 
-        fprintf(fptr, "jmp %s", label);
-    } else {
+        fprintf(fptr, "\tjmp %s\n", label.c_str());
 
+    } else { // conditional branch
         LLVMValueRef cmp = LLVMGetOperand(instruction, 0);
-        assert(LLVMGetNumOperands(pred) == 3);
-        LLVMIntPredicate pred = LLVMGetOperand(cmp, 0);
+        assert(LLVMGetNumOperands(cmp) == 2);
+        assert(LLVMGetInstructionOpcode(cmp) == LLVMICmp);
 
-        LLVMBasicBlockRef block1 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 1);
-        char* label1 = bbLabels[block1];
-        LLVMBasicBlockRef block2 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 2);
-        char* label2 = bbLabels[block2];
+        // get the predicate of the cmp instruction
+        LLVMIntPredicate pred = LLVMGetICmpPredicate(cmp);
 
+        // get both blocks
+        LLVMBasicBlockRef block1 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 0);
+        assert(bbLabels.count(block1) != 0);
+        string label1 = bbLabels[block1];
+        LLVMBasicBlockRef block2 = (LLVMBasicBlockRef) LLVMGetOperand(instruction, 1);
+        assert(bbLabels.count(block2) != 0);
+        string label2 = bbLabels[block2];
+
+        // print jump depending on the predicate
         switch(pred) {
             case LLVMIntEQ:
-                fprintf(fptr, "je %s\n", label1);
+                fprintf(fptr, "\tje %s\n", label1.c_str());
                 break;
             case LLVMIntNE:
-                fprintf(fptr, "jne %s\n", label1);
+                fprintf(fptr, "\tjne %s\n", label1.c_str());
                 break;
             case LLVMIntSGT:
-                fprintf(fptr, "jg %s\n", label1);
+                fprintf(fptr, "\tjg %s\n", label1.c_str());
                 break;
             case LLVMIntSLT:
-                fprintf(fptr, "jl %s\n", label1);
+                fprintf(fptr, "\tjl %s\n", label1.c_str());
                 break;
             case LLVMIntSGE:
-                fprintf(fptr, "jge %s\n", label1);
+                fprintf(fptr, "\tjge %s\n", label1.c_str());
                 break;
             case LLVMIntSLE:
-                fprintf(fptr, "jle %s\n", label1);
+                fprintf(fptr, "\tjle %s\n", label1.c_str());
+                break;
+            default:
                 break;
         }
 
-        fprintf(fptr, "jmp %s\n", label2);
+        // print jump to other branch
+        fprintf(fptr, "\tjmp %s\n", label2.c_str());
     }
 }
 
@@ -594,6 +665,8 @@ void handleBranch(LLVMValueRef instruction) {
 void handleAlloca(LLVMValueRef instruction) {
     assert(instruction != NULL);
     assert(LLVMGetInstructionOpcode(instruction) == LLVMAlloca);
+
+    // do nothing (handled by offsetMap)
     return;
 }
 
@@ -601,82 +674,90 @@ void handleAlloca(LLVMValueRef instruction) {
 void handleArithmetic(LLVMValueRef instruction) {
     assert(instruction != NULL);
     assert(LLVMIsABinaryOperator(instruction));
-    string reg;
-    string op;
 
+    string reg; // register to write to
+    string op; // arithmetic operation
+
+    // set reg if assigned a register
     if(regMap.count(instruction) != 0 && regMap[instruction] != "-1") {
         reg = regMap[instruction];
     } else {
         reg = "eax";
     }
 
-    LLVMValueRef op1 = LLVMGetOperand(instruction, 1);
-    LLVMValueRef op2 = LLVMGetOperand(instruction, 2);
-    if(LLVMGetNumOperands(instruction == 2)) {
+    LLVMValueRef op1;
+    LLVMValueRef op2;
+
+    // 2 operands, arithmetic (add, sub, mul)
+    if(LLVMGetNumOperands(instruction) == 2) {
         op1 = LLVMGetOperand(instruction, 0);
         op2 = LLVMGetOperand(instruction, 1);
 
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
 
+        // get specific operand value
         switch(opcode) {
             case LLVMAdd:
                 op = "addl";
                 break;
             case LLVMMul:
-                op = "imull"
+                op = "imull";
                 break;
             case LLVMSub:
                 op = "subl";
                 break;
+            default:
+                break;
         }
 
-    } else {
+    } else { // icmp
         op1 = LLVMGetOperand(instruction, 1);
         op2 = LLVMGetOperand(instruction, 2);
 
         op = "cmpl";
     }
 
+    // if the first op is a constant
     if(LLVMIsAConstantInt(op1)) {
         int val = LLVMConstIntGetSExtValue(op1);
-        fprintf(fptr, "movl $%d, %s\n", val, reg.c_str());
+        fprintf(fptr, "\tmovl $%d, %%%s\n", val, reg.c_str());
     } else {
         assert(regMap.count(op1) != 0);
 
-        if(regMap[op1] == "-1") {
+        if(regMap[op1] == "-1") { // in memory
             assert(offsetMap.count(op1) != 0);
             int offset = offsetMap[op1];
 
-            fprintf(fptr, "movl %d(%%ebp), %s\n", offset, reg.c_str());
+            fprintf(fptr, "\tmovl %d(%%ebp), %%%s\n", offset, reg.c_str());
 
-        } else {
-            fprintf(fptr, "movl %s, %s\n", regMap[op1], reg);
+        } else { // in a register
+            fprintf(fptr, "\tmovl %%%s, %%%s\n", regMap[op1].c_str(), reg.c_str());
         }
     }
 
-        LLVMValueRef op2 = LLVMGetOperand(instruction, 2);
-
+    // if the second op is a constant
     if(LLVMIsAConstantInt(op2)) {
         int val = LLVMConstIntGetSExtValue(op2);
-        fprintf(fptr, "%s $%d, %s\n", op, val, reg.c_str());
+        fprintf(fptr, "\t%s $%d, %%%s\n", op.c_str(), val, reg.c_str());
     } else {
         assert(regMap.count(op2) != 0);
 
-        if(regMap[op2] == "-1") {
+        if(regMap[op2] == "-1") { // in memory
             assert(offsetMap.count(op2) != 0);
             int offset = offsetMap[op2];
 
-            fprintf(fptr, "%s %d(%%ebp), %s\n", op, offset, reg.c_str());
-        } else {
-            fprintf(fptr, "%s %s, %s\n", op, regMap[op1], reg.c_str());
+            fprintf(fptr, "\t%s %d(%%ebp), %%%s\n", op.c_str(), offset, reg.c_str());
+
+        } else { // in a register
+            fprintf(fptr, "\t%s %%%s, %%%s\n", op.c_str(), regMap[op1].c_str(), reg.c_str());
         }
     }
 
-    if(reg == "eax") {
+    if(reg == "eax") { // if assigned a temp register, put in memory
         assert(offsetMap.count(instruction) != 0);
         int offset = offsetMap[instruction];
 
-        fprintf(fptr, "movl %%eax, %d(%%ebp)", offset);
+        fprintf(fptr, "\tmovl %%eax, %d(%%ebp)\n", offset);
     }
 
 }

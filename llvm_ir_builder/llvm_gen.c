@@ -56,12 +56,15 @@ unordered_map<LLVMBasicBlockRef, set<LLVMBasicBlockRef>> bbInGraph;
 /* main semantic analysis method - 
  * traverses nodes and handles them according to type 
  */
-LLVMModuleRef createLLVMModelFromAST(astNode* root) {  
+LLVMModuleRef createLLVMModelFromAST(astNode* root, char* filename) {  
     assert(root != NULL);
 
     // create module
     LLVMModuleRef mod = LLVMModuleCreateWithName("");
     LLVMSetTarget(mod, "x86_64-pc-linux-gnu");
+
+
+    LLVMSetSourceFileName(mod, filename, strlen(filename));
 
     // create extern functions
     assert(root->prog.ext1 != NULL);

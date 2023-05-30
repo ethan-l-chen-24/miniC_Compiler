@@ -9,6 +9,6 @@
 /* FUNCTIONS */
 /* --------- */
 
-LLVMModuleRef createLLVMModelFromAST(astNode* root);
+LLVMModuleRef createLLVMModelFromAST(astNode* root, char* filename);
 
 void optimizeLLVMBasicBlocks(LLVMModuleRef mod);

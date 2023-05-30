@@ -1,3 +1,4 @@
+source_filename = "../lib/test_files/files/test.c"
 target triple = "x86_64-pc-linux-gnu"
 
 declare void @Print(i32)
