@@ -22,4 +22,4 @@ debug:
 	gdb --args ./$(source).out $(folder)/$(subfolder)/$(test_file).c $(folder)/llvm/$(test_file).ll
 
 clean:
-	rm *.out *.o *.ll
+	rm *.out

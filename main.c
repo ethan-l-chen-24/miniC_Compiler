@@ -47,10 +47,6 @@ int main(int argc, char** argv){
 
     // generate the AST
 	yyparse();
-    if (yyin != stdin) {
-		fclose(yyin);
-	    yylex_destroy();
-    }
     printf("SUCCESS: AST Generated\n");
 
     // check semantics of the program
@@ -78,5 +74,15 @@ int main(int argc, char** argv){
     codegen(llvm_ir, argv[2]);
     printf("SUCCESS: Assembly Generated\n");
 
+   // endProgram();
+    printf("Program ended");
+
 	return 0;
+}
+
+void endProgram() {
+    if (yyin != stdin) {
+		fclose(yyin);
+	    yylex_destroy();
+    }
 }

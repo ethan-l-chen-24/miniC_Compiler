@@ -4,17 +4,13 @@ extern int read();
 int fun(int i){
 	int a;
 	int b;
+	a = 2;
+	b = 0;
 	
-  if (a < i){
-		while (b < i){
-			b = b + 20;
-		}
-		a = 10 + b;
+	while(a < 10) {
+		a = a + 3;
+		b = b + 1;
 	}
-	else {
-		if (b < i)
-			b = a;
-		else 
-			a = b;
-	}
+
+	return a + b;
 }

@@ -4,10 +4,12 @@ extern int read();
 int func(int i){
 	int a;
 	int b;
-	
-	while (a < i){
-		int a;
-		a = 10 + b;
-		print(b);
+	a = 6;
+	b = 4;
+
+	if(a < b) {
+		return b;
 	}
+
+	return a;
 }

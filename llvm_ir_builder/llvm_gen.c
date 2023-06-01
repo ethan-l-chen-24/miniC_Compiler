@@ -69,12 +69,12 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root, char* filename) {
     // create extern functions
     assert(root->prog.ext1 != NULL);
     if(root->prog.ext1 != NULL) {
-        if(strcmp(root->prog.ext1->ext.name, "Print") == 0) {
+        if(strcmp(root->prog.ext1->ext.name, "print") == 0) {
             LLVMTypeRef param_types[] = { LLVMInt32Type() };
             printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
             assert(root->prog.ext1->ext.name != NULL);
             printFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, printType);
-        } else if(strcmp(root->prog.ext1->ext.name, "Read") == 0) {
+        } else if(strcmp(root->prog.ext1->ext.name, "read") == 0) {
             readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
             assert(root->prog.ext1->ext.name != NULL);
             readFunc = LLVMAddFunction(mod, root->prog.ext1->ext.name, readType);
@@ -83,12 +83,12 @@ LLVMModuleRef createLLVMModelFromAST(astNode* root, char* filename) {
 
     assert(root->prog.ext2 != NULL);
     if(root->prog.ext2 != NULL) {
-        if(strcmp(root->prog.ext2->ext.name, "Print") == 0) {
+        if(strcmp(root->prog.ext2->ext.name, "print") == 0) {
             LLVMTypeRef param_types[] = { LLVMInt32Type() };
             printType = LLVMFunctionType(LLVMVoidType(), param_types, 1, 0);
             assert(root->prog.ext2->ext.name != NULL);
             printFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, printType);
-        } else if(strcmp(root->prog.ext2->ext.name, "Read") == 0) {
+        } else if(strcmp(root->prog.ext2->ext.name, "read") == 0) {
             readType = LLVMFunctionType(LLVMInt32Type(), {}, 0, 0);
             assert(root->prog.ext2->ext.name != NULL);
             readFunc = LLVMAddFunction(mod, root->prog.ext2->ext.name, readType);
@@ -163,7 +163,7 @@ void traverseAST(astNode* node) {
         case(ast_call): {
             assert(node->stmt.call.name != NULL);
             // if a lone PRINT instruction, build it (READ handled in expressions)
-            if(strcmp(node->stmt.call.name, "Print") == 0) {
+            if(strcmp(node->stmt.call.name, "print") == 0) {
                 assert(node->stmt.call.param != NULL);
                 LLVMValueRef args[] = { getLLVMExpression(node->stmt.call.param) };
                 LLVMBuildCall2(builder, printType, printFunc, args, 1, "");
@@ -479,7 +479,7 @@ LLVMValueRef getLLVMExpression(astNode* node) {
         case(ast_stmt): { // if statement, must be an extern call
             assert(node->stmt.type == ast_call);
             assert(node->stmt.call.name != NULL);
-            if(strcmp(node->stmt.call.name, "Read") == 0) {
+            if(strcmp(node->stmt.call.name, "read") == 0) {
                 LLVMValueRef args[] = {};
                 expr = LLVMBuildCall2(builder, readType, readFunc, args, 0, "");
             } else {

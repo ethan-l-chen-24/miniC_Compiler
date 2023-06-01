@@ -34,8 +34,8 @@ num     [0-9]
 "else"  { return ELSE; }
 "while" { return WHILE; }
 
-"print"     { yylval.string = strdup("Print"); return PRINT; }
-"read"      { yylval.string = strdup("Read"); return READ; }
+"print"     { yylval.string = strdup("print"); return PRINT; }
+"read"      { yylval.string = strdup("read"); return READ; }
 
 {alpha}{alphanum_us}*{alphanum}+|{alpha}    { yylval.string = strdup(yytext); return NAME; }
 {num}+      { yylval.ival = atoi(yytext); return NUM; }

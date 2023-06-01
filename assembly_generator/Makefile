@@ -24,4 +24,4 @@ debug:
 	gdb --args ./$(source).out build $(folder)/$(subfolder)/$(test_file).c $(folder)/assembly/$(test_file).s
 
 clean:
-	rm *.out *.o *.ll
+	rm *.out

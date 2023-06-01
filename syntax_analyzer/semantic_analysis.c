@@ -69,7 +69,7 @@ bool semanticAnalysis(astNode* node) {
         case(ast_var):
             assert(node->var.name != NULL);
             if(!onSymbolTable(node->var.name)) {
-                fprintf(stdout, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
+                fprintf(stderr, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
                 result = false;
             }
             break;
@@ -263,7 +263,7 @@ bool semanticAnalysis_opt(astNode* node) {
         case(ast_var):
             assert(node->var.name != NULL);
             if(!onSymbolTable_opt(node->var.name)) {
-                fprintf(stdout, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
+                fprintf(stderr, "Symbol error: var [%s] has not been declared\n\n", node->var.name);
                 result = false;
             }
             break;
@@ -334,7 +334,7 @@ bool handleStatements_opt(astNode* node) {
             // error if already exists - duplicate declaration
             assert(node->stmt.decl.name != NULL);
             if(onFrontSymbolTable_opt(node->stmt.decl.name)) {
-                fprintf(stdout, "Symbol error: var [%s] has already been declared\n\n", node->stmt.decl.name);
+                fprintf(stderr, "Symbol error: var [%s] has already been declared\n\n", node->stmt.decl.name);
                 result = false;
                 break;
             }

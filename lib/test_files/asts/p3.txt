@@ -1,3 +1,5 @@
+AST:
+--------------
 Prog:
  Func: func
   Var: i
@@ -48,3 +50,8 @@ Prog:
           BExpr: 
            Var: b
            Const: 10
+
+RESULT:
+---------
+Looks good to me!
+

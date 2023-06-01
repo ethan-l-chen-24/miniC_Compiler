@@ -1,7 +1,7 @@
 # Mini-C Compiler
 ## Ethan Chen, COSC 57, F004H1G
 
-This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and adjust the `target` variable to set the outputted target file name. Call `make` and then `make compile` to compile the code. Provided in `lib/test_files` are multiple folders:
+This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and adjust the `target` variable to set the outputted target file name. Call `make` and then `make build` to compile the code. Finally, run `make assemble` to run the assembly code, which uses the `main` function provided in `runner.c`. Provided in `lib/test_files` are multiple folders:
  - `files` contains `.c` files to be tested
  - `tokenized` contains the tokenized `.c` files from `syntax_analyzer`
  - `semantic_tests` contains files that should fail the `semantic_analysis` in the `syntax_analyzer`
@@ -10,7 +10,6 @@ This repository contains the code for a compiler for mini-C, a reduced version o
  - `llvm_given` contains hardcoded llvm modules
  - `llvm_optimized` contains the outputted, optimized llvm module from `optimizer`
  - `assembly` contains the outputted assembly from `assembly_generator`
- - `output` contains outputted assembly files run through the top level `main`
  
  Additionally, there is a `helper` module that contains a library of auxiliary helper functions generic to all sections of the project.
 
@@ -37,3 +36,12 @@ To test the Optimizer, `cd` into `optimizer` and build using `make`. In the Make
 ### 4. Assembly Generator
 
 The Assembly Generator takes any LLVM IR and converts into x86 assembly instructions. To test the Assembly Generator, `cd` into `assembly_generator` and build using `make`. In the Makefile, you can adjust the test file by altering the `folder` and `test_file` variables to the proper filepath. By saying `make test`, a `.s` file will be outputted in the `lib/test_files/assembly` directory, allowing you to check and test the outputted assembly code.
+
+### Extra Notes
+
+This program makes a few assumptions. These assumptions are relevant so the LLVM IR can be built properly and the assembly does not return a segmentation fault. 
+
+- all functions have a return statement
+- all variables are initialized prior to being used
+
+It is also worth mentioning that there is a segmentation fault in the main program when building. Despite debugging this for 3+ hours, I have been unable to find what is causing it (likely something with regards to stdin and stdout). However, the assembly is still generated and runs as is intended (except for the read() function which seems to be affected by it), so I do not see a pressing issue.

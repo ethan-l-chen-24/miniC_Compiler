@@ -1,4 +1,4 @@
-source = a
+source = main
 folder = lib/test_files
 subfolder = files
 test_file = p1
@@ -12,7 +12,7 @@ assembly_gen_files = assembly_generator/llvm_to_assembly.c
 helper_files = helper/helper_functions.c
 lib = lib/ast/ast
 
-.PHONY: all modules build compile clean
+.PHONY: all modules build clean
 
 all: modules build
 
@@ -24,13 +24,16 @@ modules:
 
 build: main.c
 	clang++ $(clang_flags) -o $(source).out $(syntax_files) $(llvm_builder_files) $(optimizer_files) $(assembly_gen_files) $(helper_files) $(lib).c main.c
+	./$(source).out $(folder)/$(subfolder)/$(test_file).c $(test_file).s
 
-compile:
-	./$(source).out $(folder)/$(subfolder)/$(test_file).c $(folder)/output/$(target).s
+assemble: runner.c
+	as -f -32 $(test_file).s -o $(test_file).o
+	gcc -m32 runner.c $(test_file).o
+	./a.out
 
 clean:
 	make -C syntax_analyzer clean
 	make -C llvm_ir_builder clean
 	make -C optimizer clean
 	make -C assembly_generator clean
-	rm $(source).out
+	rm $(source).out *.o

@@ -1,18 +1,18 @@
 EXTERN VOID PRINT(INT);
 EXTERN INT READ();
 
-INT NAME(INT NAME){
-	INT NAME;
-	INT NAME;
+INT func(INT i){
+	INT a;
+	INT b;
 	
-	WHILE (NAME LT NAME){
-		INT NAME;
-		NAME = NUM + NAME;
-		NAME = NAME * NAME;
+	WHILE (b LT i){
+		INT a;
+		a = 10 + b;
+		b = b * i;
 	}
 
-	WHILE (NAME LT NAME){
-		INT NAME;
-		NAME = NAME * NUM;
+	WHILE (b LT i){
+		INT a;
+		b = b * 10;
 	}
 }

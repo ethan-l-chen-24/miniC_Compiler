@@ -1,6 +1,6 @@
 #include<stdio.h>
 
-extern int func(int);
+extern int fun(int);
 
 void print(int n){
 	printf("%d\n", n);
@@ -13,7 +13,7 @@ int read(){
 }
 
 int main(){
- int a = func(20);
- printf("%d\n", a);
+    int a = fun(20);
+    printf("%d\n", a);
 }
 

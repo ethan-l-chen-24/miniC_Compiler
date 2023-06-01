@@ -1,20 +1,15 @@
 EXTERN VOID PRINT(INT);
 EXTERN INT READ();
 
-INT NAME(INT NAME){
-	INT NAME;
-	INT NAME;
+INT fun(INT i){
+	INT a;
+	INT b;
+	a = 2;
+	b = 3;
 	
-  IF (NAME LT NAME){
-		WHILE (NAME LT NAME){
-			NAME = NAME + NUM;
-		}
-		NAME = NUM + NAME;
-	}
-	ELSE {
-		IF (NAME LT NAME)
-			NAME = NAME;
-		ELSE 
-			NAME = NAME;
-	}
+  WHILE(a LT 10) {
+	a = a + 3;
+  }
+
+	RETURN a;
 }
