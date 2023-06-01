@@ -4,6 +4,8 @@ extern int read();
 int func(int i){
 	int a;
 	int b;
+	a = 10;
+	b = 3;
 	
 	while (a < i){
 		int a;

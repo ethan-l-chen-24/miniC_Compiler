@@ -4,15 +4,13 @@ extern int read();
 int func(int i){
 	int a;
 	int b;
+	a = 1;
+	b = 1;
 	
 	while (b < i){
-		int a;
-		a = 10 + b;
-		b = b * i;
+		b = b * 2;
+		print(b);
 	}
 
-	while (b < i){
-		int a;
-		b = b * 10;
-	}
+	return b;
 }

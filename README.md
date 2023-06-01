@@ -42,6 +42,6 @@ The Assembly Generator takes any LLVM IR and converts into x86 assembly instruct
 This program makes a few assumptions. These assumptions are relevant so the LLVM IR can be built properly and the assembly does not return a segmentation fault. 
 
 - all functions have a return statement
-- all variables are initialized prior to being used
+- all declared variables are also initialized
 
-It is also worth mentioning that there is a segmentation fault in the main program when building. Despite debugging this for 3+ hours, I have been unable to find what is causing it (likely something with regards to stdin and stdout). However, the assembly is still generated and runs as is intended (except for the read() function which seems to be affected by it), so I do not see a pressing issue.
+It is also worth mentioning that there is a segmentation fault in the main program when building. Despite debugging this for 3+ hours, I have been unable to find what is causing it (likely something with regards to stdin and stdout). However, the assembly is still generated and runs as is intended (except for the read() and some print() statements, including the printf() in the runner), so I do not see a pressing issue.

@@ -1,7 +1,7 @@
 source = main
 folder = lib/test_files
 subfolder = files
-test_file = p1
+test_file = p3
 target = out
 
 clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb -gdwarf-4 -g
