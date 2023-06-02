@@ -10,29 +10,10 @@ Prog:
     Stmt: 
      Decl: b
     Stmt: 
-     While: cond 
-      RExpr: 
-       Var: b
-       Var: i
-     While: body 
-      Stmt: 
-       Block:
-        Stmt: 
-         Decl: a
-        Stmt: 
-         Asgn: lhs
-          Var: a
-         Asgn: rhs
-          BExpr: 
-           Const: 10
-           Var: b
-        Stmt: 
-         Asgn: lhs
-          Var: b
-         Asgn: rhs
-          BExpr: 
-           Var: b
-           Var: i
+     Asgn: lhs
+      Var: b
+     Asgn: rhs
+      Const: 2
     Stmt: 
      While: cond 
       RExpr: 
@@ -42,14 +23,25 @@ Prog:
       Stmt: 
        Block:
         Stmt: 
-         Decl: a
+         Asgn: lhs
+          Var: a
+         Asgn: rhs
+          Stmt: 
+           Call: name read
         Stmt: 
          Asgn: lhs
           Var: b
          Asgn: rhs
           BExpr: 
            Var: b
-           Const: 10
+           Var: a
+        Stmt: 
+         Call: name print
+         Call: param
+          Var: b
+    Stmt: 
+     Ret:
+      Var: b
 
 RESULT:
 ---------

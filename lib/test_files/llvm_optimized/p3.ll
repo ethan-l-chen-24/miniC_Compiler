@@ -1,8 +1,9 @@
+source_filename = "../lib/test_files/files/p3.c"
 target triple = "x86_64-pc-linux-gnu"
 
-declare void @Print(i32)
+declare void @print(i32)
 
-declare i32 @Read()
+declare i32 @read()
 
 define i32 @func(i32 %0) {
   %RETURN = alloca i32, align 4
@@ -10,41 +11,29 @@ define i32 @func(i32 %0) {
   %a = alloca i32, align 4
   %b = alloca i32, align 4
   store i32 %0, ptr %i, align 4
-  br label %4
+  store i32 2, ptr %b, align 4
+  br label %2
 
-2:                                                ; No predecessors!
-  %3 = load i32, ptr %RETURN, align 4
-  ret i32 %3
+2:                                                ; preds = %6, %1
+  %3 = load i32, ptr %b, align 4
+  %4 = load i32, ptr %i, align 4
+  %5 = icmp slt i32 %3, %4
+  br i1 %5, label %6, label %12
 
-4:                                                ; preds = %8, %1
-  %5 = load i32, ptr %b, align 4
-  %6 = load i32, ptr %i, align 4
-  %7 = icmp slt i32 %5, %6
-  br i1 %7, label %8, label %13
+6:                                                ; preds = %2
+  %7 = call i32 @read()
+  store i32 %7, ptr %a, align 4
+  %8 = load i32, ptr %b, align 4
+  %9 = load i32, ptr %a, align 4
+  %10 = mul i32 %8, %9
+  store i32 %10, ptr %b, align 4
+  %11 = load i32, ptr %b, align 4
+  call void @print(i32 %11)
+  br label %2
 
-8:                                                ; preds = %4
-  %9 = load i32, ptr %b, align 4
-  %10 = add i32 10, %9
-  store i32 %10, ptr %a, align 4
-  %11 = load i32, ptr %i, align 4
-  %12 = mul i32 %9, %11
-  store i32 %12, ptr %b, align 4
-  br label %4
-
-13:                                               ; preds = %4
-  br label %14
-
-14:                                               ; preds = %18, %13
-  %15 = load i32, ptr %b, align 4
-  %16 = load i32, ptr %i, align 4
-  %17 = icmp slt i32 %15, %16
-  br i1 %17, label %18, label %21
-
-18:                                               ; preds = %14
-  %19 = load i32, ptr %b, align 4
-  %20 = mul i32 %19, 10
-  store i32 %20, ptr %b, align 4
-  br label %14
-
-21:                                               ; preds = %14
+12:                                               ; preds = %2
+  %13 = load i32, ptr %b, align 4
+  store i32 %13, ptr %RETURN, align 4
+  %14 = load i32, ptr %RETURN, align 4
+  ret i32 %14
 }

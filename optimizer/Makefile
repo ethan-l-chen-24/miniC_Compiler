@@ -3,7 +3,7 @@ main = optimizer
 source = optimized
 folder = ../lib/test_files
 subfolder = files
-test_file = p1
+test_file = p3
 
 clang_flags = `llvm-config-15 --cxxflags --ldflags --libs core` -I /usr/include/llvm-c-15/ -ggdb -gdwarf-4 -g
 syntax_files = ../syntax_analyzer/semantic_analysis.c ../syntax_analyzer/y.tab.c ../syntax_analyzer/lex.yy.c

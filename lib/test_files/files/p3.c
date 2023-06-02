@@ -4,11 +4,11 @@ extern int read();
 int func(int i){
 	int a;
 	int b;
-	a = 1;
-	b = 1;
+	b = 2;
 	
 	while (b < i){
-		b = b * 2;
+		a = read();
+		b = b * a;
 		print(b);
 	}
 

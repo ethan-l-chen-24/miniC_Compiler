@@ -1,7 +1,7 @@
 # Mini-C Compiler
 ## Ethan Chen, COSC 57, F004H1G
 
-This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and adjust the `target` variable to set the outputted target file name. Call `make` and then `make build` to compile the code. Finally, run `make assemble` to run the assembly code, which uses the `main` function provided in `runner.c`. Provided in `lib/test_files` are multiple folders:
+This repository contains the code for a compiler for mini-C, a reduced version of the C programming language. To compile a miniC file, adjust the `folder` and `test_file` variables in the Makefile to match the file you want to compile, and adjust the `target` variable to set the outputted target file name. Call `make modules` and then `make build` (or alternatively `make` to compute both targets at once) to compile the code. Finally, run `make assemble` to generate and run the assembly code, which uses the `main` function provided in `runner.c`. Provided in `lib/test_files` are multiple folders:
  - `files` contains `.c` files to be tested
  - `tokenized` contains the tokenized `.c` files from `syntax_analyzer`
  - `semantic_tests` contains files that should fail the `semantic_analysis` in the `syntax_analyzer`
@@ -43,5 +43,3 @@ This program makes a few assumptions. These assumptions are relevant so the LLVM
 
 - all functions have a return statement
 - all declared variables are also initialized
-
-It is also worth mentioning that there is a segmentation fault in the main program when building. Despite debugging this for 3+ hours, I have been unable to find what is causing it (likely something with regards to stdin and stdout). However, the assembly is still generated and runs as is intended (except for the read() and some print() statements, including the printf() in the runner), so I do not see a pressing issue.

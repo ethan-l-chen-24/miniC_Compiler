@@ -32,7 +32,7 @@ void registerAllocation(LLVMValueRef func);
 
 // other helper methods
 void createBBLabels(LLVMValueRef func);
-void printDirectives(LLVMValueRef func, const char* filename);
+void printDirectives(LLVMValueRef func, char* filename);
 void printFunctionEnd(LLVMValueRef func);
 void getOffsetMap(LLVMValueRef func);
 void printStack();
@@ -316,8 +316,6 @@ void codegen(LLVMModuleRef mod, char* filename) {
             continue;
         }
 
-        size_t* len;
-
         // get the parameter
         LLVMValueRef parameter;
         if(LLVMCountParams(func) == 1) {
@@ -327,7 +325,7 @@ void codegen(LLVMModuleRef mod, char* filename) {
         // allocate registers and populate global variables
         createBBLabels(func);
         registerAllocation(func);
-        printDirectives(func, LLVMGetSourceFileName(mod, len));
+        printDirectives(func, filename);
         getOffsetMap(func);
 
         // loop through basic blocks
@@ -389,7 +387,9 @@ void codegen(LLVMModuleRef mod, char* filename) {
 
     }
 
-    fclose(fptr); 
+    if(fptr != NULL) {
+        fclose(fptr); 
+    }
 }
 
 /* assigns each basic block in the module a char* label
@@ -420,7 +420,7 @@ void createBBLabels(LLVMValueRef func) {
 }
 
 /* prints the directives of the function */
-void printDirectives(LLVMValueRef func, const char* filename) {
+void printDirectives(LLVMValueRef func, char* filename) {
     assert(func != NULL);
 
     const char* functionName = LLVMGetValueName(func);
@@ -437,6 +437,7 @@ void printDirectives(LLVMValueRef func, const char* filename) {
 void printFunctionEnd(LLVMValueRef func) {
     assert(func != NULL);
 
+    fprintf(fptr, "\tpopl %%ebx\n");
     fprintf(fptr, "\tleave\n");
     fprintf(fptr, "\tret\n");
 }
@@ -458,7 +459,6 @@ void getOffsetMap(LLVMValueRef func) {
 
     // set local variable of parameter to have offset 8
     LLVMValueRef paramAlloca = NULL;
-    LLVMValueRef param;
     if(LLVMCountParams(func) == 1) {
         // get the parameter
         LLVMValueRef param = LLVMGetParam(func, 0);
@@ -523,6 +523,9 @@ void printStack() {
 
     // move stack pointer to allocate enough space for allocas and spills
     fprintf(fptr, "\tsubl $%d, %%esp\n", localMem);
+
+    // push ebx
+    fprintf(fptr, "\tpushl %%ebx\n");
 }
 
 /* handles return statements */
@@ -660,6 +663,17 @@ void handleCall(LLVMValueRef instruction) {
     fprintf(fptr, "\tpopl %%edx\n");
     fprintf(fptr, "\tpopl %%ecx\n");
     fprintf(fptr, "\tpopl %%ebx\n");
+
+    // if returns a value
+    if(regMap.count(instruction) != 0) {
+        if(regMap[instruction] == "-1") {
+            assert(offsetMap.count(instruction) != 0);
+            int offset = offsetMap[instruction];
+            fprintf(fptr, "\tmovl %%eax, %d(%%ebp)\n", offset);
+        } else {
+            fprintf(fptr, "\tmovl %%eax, %%%s\n", regMap[instruction].c_str());
+        }
+    }
 }
 
 /* handles branch statements */
@@ -792,7 +806,9 @@ void handleArithmetic(LLVMValueRef instruction) {
             fprintf(fptr, "\tmovl %d(%%ebp), %%%s\n", offset, reg.c_str());
 
         } else { // in a register
-            fprintf(fptr, "\tmovl %%%s, %%%s\n", regMap[op1].c_str(), reg.c_str());
+            if(regMap[op1] != regMap[instruction]) {
+                fprintf(fptr, "\tmovl %%%s, %%%s\n", regMap[op1].c_str(), reg.c_str());
+            }
         }
     }
 

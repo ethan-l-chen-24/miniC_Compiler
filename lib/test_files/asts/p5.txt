@@ -1,3 +1,5 @@
+AST:
+--------------
 Prog:
  Func: func
   Var: i
@@ -7,6 +9,16 @@ Prog:
      Decl: a
     Stmt: 
      Decl: b
+    Stmt: 
+     Asgn: lhs
+      Var: a
+     Asgn: rhs
+      Const: 10
+    Stmt: 
+     Asgn: lhs
+      Var: b
+     Asgn: rhs
+      Const: 3
     Stmt: 
      While: cond 
       RExpr: 
@@ -22,7 +34,7 @@ Prog:
           Var: a
          Asgn: rhs
           Stmt: 
-           Call: name Read
+           Call: name read
         Stmt: 
          Asgn: lhs
           Var: b
@@ -30,3 +42,8 @@ Prog:
           BExpr: 
            Const: 10
            Var: a
+
+RESULT:
+---------
+Looks good to me!
+

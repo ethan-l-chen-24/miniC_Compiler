@@ -38,16 +38,23 @@ void endProgram();
 /* ------- */
 
 int main(int argc, char** argv){
+
+    char source[256];
+    char dest[256];
+    strcpy(source, argv[1]);
+    strcpy(dest, argv[2]);
+
 	if (argc == 3){
-		yyin = fopen(argv[1], "r");
+		yyin = fopen(source, "r");
 	} else {
-        fprintf(stderr, "Please run the file as so: ./[source].out [input filepath] [output filepath]");
+        printf("Please run the file as so: ./[source].out [input filepath] [output filepath]");
         return 1;
     }
 
     // generate the AST
 	yyparse();
     printf("SUCCESS: AST Generated\n");
+
 
     // check semantics of the program
     bool valid_semantics = semanticAnalysis_opt(root); // run with or without _opt extension - _opt trades memory for runtime
@@ -57,10 +64,10 @@ int main(int argc, char** argv){
         printf("FAILURE: Semantics Failed\n");
         return 1;
     }
-    printf("SUCCESS: Semantics Checked\n");
+    printf("SUCCESS: Semantics Checked\n"); 
 
     // convert to LLVM IR
-    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root, argv[1]);
+    LLVMModuleRef llvm_ir = createLLVMModelFromAST(root, source);
     optimizeLLVMBasicBlocks(llvm_ir);
     printf("SUCCESS: LLVM IR Built\n");
 
@@ -71,11 +78,10 @@ int main(int argc, char** argv){
     printf("SUCCESS: LLVM IR Optimized\n");
 
     // Convert to machine code
-    codegen(llvm_ir, argv[2]);
+    codegen(llvm_ir, dest);
     printf("SUCCESS: Assembly Generated\n");
 
-   // endProgram();
-    printf("Program ended");
+    endProgram();
 
 	return 0;
 }

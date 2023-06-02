@@ -456,7 +456,7 @@ LLVMValueRef getLLVMExpression(astNode* node) {
                     break;
                 }
 
-                default: {}
+                default: { expr = NULL; }
             }
             break;
 
@@ -489,6 +489,7 @@ LLVMValueRef getLLVMExpression(astNode* node) {
         }
 
         default: {
+            expr = NULL;
             break;
         }
 

@@ -50,6 +50,15 @@ int main(int argc, char** argv){
 		llvm_ir = createLLVMModelFromAST(root, argv[2]);
 		optimizeLLVMBasicBlocks(llvm_ir);
 
+		// check semantics
+		bool valid_semantics = semanticAnalysis_opt(root);
+
+		if(!valid_semantics) {
+			freeNode(root);
+			printf("FAILURE: Semantics Failed\n");
+			return 1;
+		}
+
 		// add optimizations here
 		optimizeLLVM(llvm_ir);
 

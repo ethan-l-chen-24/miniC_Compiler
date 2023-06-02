@@ -2,74 +2,233 @@ AST:
 --------------
 Prog:
  Func: func
-  Var: i
+  Var: n
   Stmt: 
    Block:
     Stmt: 
-     Decl: a
+     Decl: i
     Stmt: 
-     Decl: b
-    Stmt: 
-     If: cond
-      RExpr: 
-       Var: a
-       Var: i
-     If: body
-      Stmt: 
-       Block:
-        Stmt: 
-         Asgn: lhs
-          Var: b
-         Asgn: rhs
-          Var: a
-     Else: body
-      Stmt: 
-       If: cond
-        RExpr: 
-         Var: a
-         Const: 3
-       If: body
-        Stmt: 
-         Block:
-          Stmt: 
-           Asgn: lhs
-            Var: b
-           Asgn: rhs
-            Const: 3
-       Else: body
-        Stmt: 
-         Block:
-          Stmt: 
-           Call: name Print
-           Call: param
-            Var: a
+     Call: name print
+     Call: param
+      BExpr: 
+       Var: n
+       Var: n
     Stmt: 
      While: cond 
       RExpr: 
-       Var: a
-       Var: i
+       Const: 1
+       Const: 2
      While: body 
       Stmt: 
        Block:
         Stmt: 
-         Decl: a
+         Decl: val
         Stmt: 
          Asgn: lhs
-          Var: a
+          Var: val
          Asgn: rhs
           Stmt: 
-           Call: name Read
+           Call: name read
         Stmt: 
-         Asgn: lhs
-          Var: b
-         Asgn: rhs
-          BExpr: 
-           Const: 10
-           Var: a
+         If: cond
+          RExpr: 
+           Var: val
+           Const: 0
+         If: body
+          Stmt: 
+           Block:
+            Stmt: 
+             Decl: t
+            Stmt: 
+             Decl: g
+            Stmt: 
+             Decl: x
+            Stmt: 
+             Call: name print
+             Call: param
+              UExpr: 
+               Const: 1
+            Stmt: 
+             Asgn: lhs
+              Var: t
+             Asgn: rhs
+              Stmt: 
+               Call: name read
+            Stmt: 
+             Asgn: lhs
+              Var: g
+             Asgn: rhs
+              Stmt: 
+               Call: name read
+            Stmt: 
+             Asgn: lhs
+              Var: x
+             Asgn: rhs
+              BExpr: 
+               Var: t
+               Var: g
+            Stmt: 
+             If: cond
+              RExpr: 
+               Var: x
+               Var: n
+             If: body
+              Stmt: 
+               Block:
+                Stmt: 
+                 Call: name print
+                 Call: param
+                  Const: 1
+            Stmt: 
+             If: cond
+              RExpr: 
+               Var: x
+               Var: n
+             If: body
+              Stmt: 
+               Block:
+                Stmt: 
+                 Call: name print
+                 Call: param
+                  Const: 11
+            Stmt: 
+             If: cond
+              RExpr: 
+               Var: x
+               Var: n
+             If: body
+              Stmt: 
+               Block:
+                Stmt: 
+                 Call: name print
+                 Call: param
+                  UExpr: 
+                   Const: 11
+         Else: body
+          Stmt: 
+           If: cond
+            RExpr: 
+             Var: val
+             Const: 1
+           If: body
+            Stmt: 
+             Block:
+              Stmt: 
+               Decl: t
+              Stmt: 
+               Call: name print
+               Call: param
+                UExpr: 
+                 Const: 2
+              Stmt: 
+               Asgn: lhs
+                Var: t
+               Asgn: rhs
+                Stmt: 
+                 Call: name read
+              Stmt: 
+               If: cond
+                RExpr: 
+                 Var: t
+                 Var: n
+               If: body
+                Stmt: 
+                 Block:
+                  Stmt: 
+                   Call: name print
+                   Call: param
+                    Const: 1
+               Else: body
+                Stmt: 
+                 Block:
+                  Stmt: 
+                   Call: name print
+                   Call: param
+                    Const: 0
+           Else: body
+            Stmt: 
+             If: cond
+              RExpr: 
+               Const: 0
+               Var: val
+             If: body
+              Stmt: 
+               Block:
+                Stmt: 
+                 Decl: t
+                Stmt: 
+                 Call: name print
+                 Call: param
+                  UExpr: 
+                   Const: 3
+                Stmt: 
+                 Asgn: lhs
+                  Var: t
+                 Asgn: rhs
+                  Stmt: 
+                   Call: name read
+                Stmt: 
+                 Asgn: lhs
+                  Var: i
+                 Asgn: rhs
+                  Const: 0
+                Stmt: 
+                 While: cond 
+                  RExpr: 
+                   Var: i
+                   Var: t
+                 While: body 
+                  Stmt: 
+                   Block:
+                    Stmt: 
+                     Call: name print
+                     Call: param
+                      Var: i
+                    Stmt: 
+                     Asgn: lhs
+                      Var: i
+                     Asgn: rhs
+                      BExpr: 
+                       Var: i
+                       Const: 1
+             Else: body
+              Stmt: 
+               Block:
+                Stmt: 
+                 Call: name print
+                 Call: param
+                  Const: 100000001
+                Stmt: 
+                 Asgn: lhs
+                  Var: i
+                 Asgn: rhs
+                  Const: 0
+                Stmt: 
+                 While: cond 
+                  RExpr: 
+                   Var: i
+                   Const: 3
+                 While: body 
+                  Stmt: 
+                   Block:
+                    Stmt: 
+                     Call: name print
+                     Call: param
+                      Var: i
+                    Stmt: 
+                     Asgn: lhs
+                      Var: i
+                     Asgn: rhs
+                      BExpr: 
+                       Const: 1
+                       Var: i
+                Stmt: 
+                 Ret:
+                  UExpr: 
+                   Var: n
     Stmt: 
      Ret:
-      Stmt: 
-       Call: name Read
+      Const: 0
 
 RESULT:
 ---------

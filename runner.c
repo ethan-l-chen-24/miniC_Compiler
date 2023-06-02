@@ -13,7 +13,7 @@ int read(){
 }
 
 int main(){
-    int a = func(200);
+    int a = func(10);
     printf("%d\n", a);
 }
 

@@ -1,3 +1,5 @@
+AST:
+--------------
 Prog:
  Func: func
   Var: i
@@ -8,23 +10,31 @@ Prog:
     Stmt: 
      Decl: b
     Stmt: 
-     While: cond 
+     Asgn: lhs
+      Var: a
+     Asgn: rhs
+      Const: 6
+    Stmt: 
+     Asgn: lhs
+      Var: b
+     Asgn: rhs
+      Const: 4
+    Stmt: 
+     If: cond
       RExpr: 
        Var: a
-       Var: i
-     While: body 
+       Var: b
+     If: body
       Stmt: 
        Block:
         Stmt: 
-         Decl: a
-        Stmt: 
-         Asgn: lhs
-          Var: a
-         Asgn: rhs
-          BExpr: 
-           Const: 10
-           Var: b
-        Stmt: 
-         Call: name Print
-         Call: param
+         Ret:
           Var: b
+    Stmt: 
+     Ret:
+      Var: a
+
+RESULT:
+---------
+Looks good to me!
+

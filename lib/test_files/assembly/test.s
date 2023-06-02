@@ -1,4 +1,4 @@
-	.file	"../lib/test_files/files/test.c"
+	.file	"../lib/test_files/assembly/test.s"
 	.text
 	.globl	func
 	.type	func, @function
@@ -7,8 +7,8 @@ func:
 	pushl %ebp
 	movl %esp, %ebp
 	subl $24, %esp
+	pushl %ebx
 	movl 8(%ebp), %edx
-	movl %edx, %edx
 	imull %edx, %edx
 	pushl %ebx
 	pushl %ecx
@@ -32,6 +32,7 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
+	movl %eax, %edx
 	movl %edx, -12(%ebp)
 	movl -12(%ebp), %edx
 	movl %edx, %ecx
@@ -60,6 +61,7 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
+	movl %eax, %edx
 	movl %edx, -16(%ebp)
 	pushl %ebx
 	pushl %ecx
@@ -68,10 +70,10 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
+	movl %eax, %edx
 	movl %edx, -20(%ebp)
 	movl -16(%ebp), %edx
 	movl -20(%ebp), %ecx
-	movl %edx, %edx
 	addl %ecx, %edx
 	movl %edx, -24(%ebp)
 	movl -24(%ebp), %edx
@@ -163,6 +165,7 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
+	movl %eax, %edx
 	movl %edx, -16(%ebp)
 	movl -16(%ebp), %edx
 	movl 8(%ebp), %ecx
@@ -225,6 +228,7 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
+	movl %eax, %edx
 	movl %edx, -16(%ebp)
 	movl $0, -8(%ebp)
 	jmp .L21
@@ -261,7 +265,6 @@ func:
 	popl %edx
 	popl %ecx
 	popl %ebx
-	movl %edx, %edx
 	subl $1, %edx
 	movl %edx, -8(%ebp)
 	jmp .L21
@@ -294,7 +297,6 @@ func:
 
 .L26:
 	movl 8(%ebp), %edx
-	movl %edx, %edx
 	imull $-1, %edx
 	movl %edx, -4(%ebp)
 	jmp .L27
@@ -302,6 +304,7 @@ func:
 .L27:
 	movl -4(%ebp), %edx
 	movl %edx, %eax
+	popl %ebx
 	leave
 	ret
 

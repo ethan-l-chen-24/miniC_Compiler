@@ -194,12 +194,10 @@ bool commonSubexpressionElimination(LLVMBasicBlockRef bb) {
     vector<LLVMValueRef>* instructionsToErase = new vector<LLVMValueRef>(); // instructions to erase
 
     // walk instructions
-    int k = 0;
     for (LLVMValueRef instruction = LLVMGetFirstInstruction(bb); 
         instruction;
   		instruction = LLVMGetNextInstruction(instruction)) {
 
-        k++;
         // retrieve the opCode
         LLVMOpcode opcode = LLVMGetInstructionOpcode(instruction);
 

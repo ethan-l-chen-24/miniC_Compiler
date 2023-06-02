@@ -5,7 +5,7 @@ main = syntax_analyzer
 source = syntax
 folder = ../lib/test_files
 subfolder = files
-test_file = p1
+test_file = p5
 	
 build: $(yacc_source).y $(lex_source).l $(lib).c semantic_analysis.c $(main).c
 	yacc -d -v $(yacc_source).y
